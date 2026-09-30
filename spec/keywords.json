@@ -1,0 +1,607 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "meta": {
+    "name": "ese 关键字单一数据源",
+    "spec_version": "2.9",
+    "authority": "docs/ese语言规范-完整版.md §16.4 关键字对照表",
+    "rule": "解析器、ese check、VSCode 插件、ese doc、测试五端只读本文件，禁止硬编码关键字；中英两形必须同批增删，任一侧缺失即 CI 失败。",
+    "mode_note": "[ee] / [zz] 只切换「词」，不切换「框」——括号符号两种模式完全相同。定义符 c / .c 跨模式通用，不在本表中。",
+    "positions": [
+      "container-open: 容器起始修饰词，紧跟在开括号之后",
+      "statement: 独立语句，占据语句位置",
+      "attribute: 属性名，出现在容器/组件调用的属性位",
+      "modifier: 修饰词，跟随在其它关键字或产生式之后",
+      "operator: 运算符，参与表达式优先级",
+      "type: 属性类型标注",
+      "function: 内置函数，值位置以 func-call 形式出现",
+      "literal: 值字面量",
+      "directive: 编译指令（pragma），仅顶层，不进符号表"
+    ],
+    "status_values": {
+      "active": "当前可用",
+      "reserved": "语法已冻结、当前使用即报错（ESE1011）",
+      "open": "已知缺口，语义待定案（见 spec/README.md「已记录的待定案」）"
+    }
+  },
+  "keywords": [
+    {
+      "id": "component-def",
+      "zh": ["组件"],
+      "en": ["component"],
+      "position": "container-open",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "container",
+      "note": "组件定义：[+ 组件 名字 … +] / [+ component Name … +]"
+    },
+    {
+      "id": "prop",
+      "zh": ["属性"],
+      "en": ["prop"],
+      "position": "statement",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "attr-line",
+      "note": "组件形式参数，出现在组件体首部"
+    },
+    {
+      "id": "call",
+      "zh": ["调用"],
+      "en": ["call"],
+      "position": "statement",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "invoke",
+      "note": "行为按钮与命名逻辑块的唯一绑定方式；v2.9 起支持 调用 名字(实参)"
+    },
+    {
+      "id": "render-children",
+      "zh": ["渲染", "内容"],
+      "en": ["render", "children"],
+      "position": "statement",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "children-render",
+      "note": "插槽输出，组件体内使用"
+    },
+    {
+      "id": "page",
+      "zh": ["页面"],
+      "en": ["page"],
+      "position": "statement",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "route-page",
+      "note": "路由页面声明，只在 ese.bd 中出现"
+    },
+    {
+      "id": "goto",
+      "zh": ["跳转"],
+      "en": ["goto"],
+      "position": "function",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "jump, jmp-builtin",
+      "note": "页面跳转；既是 [c. … .c] 的尾随跳转语句，也是内置函数"
+    },
+    {
+      "id": "import",
+      "zh": ["引入", "的"],
+      "en": ["import", "from"],
+      "position": "statement",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "import",
+      "note": "引入 \"./x.bd\" 的 名字, 名字 —— 逐个引入具体成员"
+    },
+    {
+      "id": "import-as",
+      "zh": ["引入", "为"],
+      "en": ["import", "as"],
+      "position": "statement",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "import",
+      "note": "引入 \"./x.bd\" 为 命名空间 —— 绑定命名空间；不写 为 时默认命名空间 = 文件名去扩展名"
+    },
+    {
+      "id": "global",
+      "zh": ["全局"],
+      "en": ["global"],
+      "position": "modifier",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "exec",
+      "note": "全局执行块的名字：[> 全局 : … >]；全局状态只能在此块中修改"
+    },
+    {
+      "id": "for",
+      "zh": ["遍历", "为"],
+      "en": ["for", "as"],
+      "position": "statement",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "iterate",
+      "note": "遍历 集合 为 元素"
+    },
+    {
+      "id": "times",
+      "zh": ["次"],
+      "en": ["times"],
+      "position": "modifier",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "count",
+      "note": "计数循环：[~ 3 次 … ~] / [~ 3 times … ~]"
+    },
+    {
+      "id": "assert",
+      "zh": ["断言"],
+      "en": ["assert"],
+      "position": "statement",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "assert",
+      "note": "测试断言：断言 \"名称\" 表达式"
+    },
+    {
+      "id": "required",
+      "zh": ["必须"],
+      "en": ["required"],
+      "position": "modifier",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "prop-def",
+      "note": "属性必填开关，逐属性打开；不提供全局严格模式"
+    },
+    {
+      "id": "derived",
+      "zh": ["派生"],
+      "en": ["derived"],
+      "position": "modifier",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "calc",
+      "note": "只读派生值，依赖自动追踪；赋值报 ESE2007，循环依赖报 ESE2008"
+    },
+    {
+      "id": "key",
+      "zh": ["键"],
+      "en": ["key"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "key-attr",
+      "note": "遍历重渲染身份：键={项.id}；同一循环内必须唯一"
+    },
+    {
+      "id": "tolerant",
+      "zh": ["容错"],
+      "en": ["tolerant"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "错误边界开关属性；可出现在任意容器与组件调用上"
+    },
+    {
+      "id": "fallback",
+      "zh": ["兜底"],
+      "en": ["fallback"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "容错容器降级显示的文字；未给时渲染为空"
+    },
+    {
+      "id": "get",
+      "zh": ["取"],
+      "en": ["get"],
+      "position": "function",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "取(字典, 键, 缺省) —— 键不存在返回缺省，不终止"
+    },
+    {
+      "id": "get-or",
+      "zh": ["取或"],
+      "en": ["getOr"],
+      "position": "function",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "取或(列表, 序号, 缺省) —— 越界返回缺省，不终止"
+    },
+    {
+      "id": "take",
+      "zh": ["取第"],
+      "en": ["take"],
+      "position": "function",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "取第(列表, 序号) —— 越界即停（ESE3003）"
+    },
+    {
+      "id": "len",
+      "zh": ["长度"],
+      "en": ["len"],
+      "position": "function",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "长度(列表或字典)"
+    },
+    {
+      "id": "push",
+      "zh": ["加入"],
+      "en": ["push"],
+      "position": "function",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "加入(列表, 值) —— 尾部追加"
+    },
+    {
+      "id": "contains",
+      "zh": ["包含"],
+      "en": ["contains"],
+      "position": "function",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "包含(列表或字典, 值) —— 返回 是/否"
+    },
+    {
+      "id": "keys",
+      "zh": ["键列表"],
+      "en": ["keys"],
+      "position": "function",
+      "since": "2.2",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "键列表(字典)"
+    },
+    {
+      "id": "to-number",
+      "zh": ["转数字"],
+      "en": ["toNumber"],
+      "position": "function",
+      "since": "2.3",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "转数字(x) —— 失败即停"
+    },
+    {
+      "id": "to-text",
+      "zh": ["转文字"],
+      "en": ["toText"],
+      "position": "function",
+      "since": "2.3",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "转文字(x) —— 任意值转文字"
+    },
+    {
+      "id": "print",
+      "zh": ["打印"],
+      "en": ["print"],
+      "position": "function",
+      "since": "2.0",
+      "status": "active",
+      "upstream": "func-call",
+      "note": "输出到控制台 / 构建日志"
+    },
+    {
+      "id": "event",
+      "zh": ["事件"],
+      "en": ["event"],
+      "position": "function",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "event-object",
+      "note": "事件对象，仅执行块内可用；字段 值 / 索引 / 项 / 目标"
+    },
+    {
+      "id": "and",
+      "zh": ["并且"],
+      "en": ["and"],
+      "position": "operator",
+      "since": "2.3",
+      "status": "active",
+      "precedence": 8,
+      "associativity": "left",
+      "note": "and-expr"
+    },
+    {
+      "id": "or",
+      "zh": ["或者"],
+      "en": ["or"],
+      "position": "operator",
+      "since": "2.3",
+      "status": "active",
+      "precedence": 9,
+      "associativity": "left",
+      "note": "or-expr"
+    },
+    {
+      "id": "not",
+      "zh": ["非"],
+      "en": ["not"],
+      "position": "operator",
+      "since": "2.3",
+      "status": "active",
+      "precedence": 3,
+      "associativity": "right",
+      "note": "unary"
+    },
+    {
+      "id": "true",
+      "zh": ["是"],
+      "en": ["true"],
+      "position": "literal",
+      "since": "2.3",
+      "status": "active",
+      "upstream": "boolean"
+    },
+    {
+      "id": "false",
+      "zh": ["否"],
+      "en": ["false"],
+      "position": "literal",
+      "since": "2.3",
+      "status": "active",
+      "upstream": "boolean"
+    },
+    {
+      "id": "type-text",
+      "zh": ["文字"],
+      "en": ["text"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name"
+    },
+    {
+      "id": "type-number",
+      "zh": ["数字"],
+      "en": ["number"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name"
+    },
+    {
+      "id": "type-bool",
+      "zh": ["是否"],
+      "en": ["bool"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name"
+    },
+    {
+      "id": "type-list",
+      "zh": ["名单"],
+      "en": ["list"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name"
+    },
+    {
+      "id": "type-dict",
+      "zh": ["字典"],
+      "en": ["dict"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name"
+    },
+    {
+      "id": "type-any",
+      "zh": ["任意"],
+      "en": ["any"],
+      "position": "type",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "type-name",
+      "note": "未标注类型即等价于 任意（v2.2 兼容）"
+    },
+    {
+      "id": "style",
+      "zh": ["样式"],
+      "en": ["style"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "字面样式，12 项白名单，白名单外报 ESE2010；优先级高于 类"
+    },
+    {
+      "id": "class",
+      "zh": ["类"],
+      "en": ["class"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "引用 样式.fmt 中的类或 ese-ui 内置类"
+    },
+    {
+      "id": "alt",
+      "zh": ["替代"],
+      "en": ["alt"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "媒体块可访问性描述，编译为 alt；缺失时警告（ESE2015）"
+    },
+    {
+      "id": "label",
+      "zh": ["标签"],
+      "en": ["label"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "输入框的可访问标签，编译为 <label> 并关联"
+    },
+    {
+      "id": "placeholder",
+      "zh": ["提示"],
+      "en": ["placeholder"],
+      "position": "attribute",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "attr",
+      "note": "输入框占位文字"
+    },
+    {
+      "id": "doc",
+      "zh": ["文档"],
+      "en": ["doc"],
+      "position": "modifier",
+      "since": "2.9",
+      "status": "active",
+      "upstream": "doc-comment",
+      "note": "[! 文档 : … !] 文档注释，绑定其后紧邻的定义，供 ese doc 消费"
+    },
+    {
+      "id": "wait",
+      "zh": ["等待"],
+      "en": ["wait"],
+      "position": "statement",
+      "since": "2.4",
+      "status": "reserved",
+      "upstream": "wait-stmt",
+      "open_version": "v3.x",
+      "note": "异步预留语法位，当前使用即报错（ESE1011）"
+    },
+    {
+      "id": "async",
+      "zh": ["异步"],
+      "en": ["async"],
+      "position": "modifier",
+      "since": "2.4",
+      "status": "reserved",
+      "upstream": "exec",
+      "open_version": "v3.x",
+      "note": "异步执行块修饰词，当前使用即报错（ESE1011）"
+    },
+    {
+      "id": "on-mount",
+      "zh": ["当", "组件加载"],
+      "en": ["on", "mount"],
+      "position": "statement",
+      "since": "2.4",
+      "status": "reserved",
+      "upstream": "exec",
+      "open_version": "v3.x",
+      "note": "生命周期钩子（挂载），当前使用即报错（ESE1011）"
+    },
+    {
+      "id": "on-unmount",
+      "zh": ["当", "组件卸载"],
+      "en": ["on", "unmount"],
+      "position": "statement",
+      "since": "2.4",
+      "status": "reserved",
+      "upstream": "exec",
+      "open_version": "v3.x",
+      "note": "生命周期钩子（卸载），当前使用即报错（ESE1011）"
+    },
+    {
+      "id": "sec-suffix",
+      "zh": ["秒"],
+      "en": ["s"],
+      "position": "modifier",
+      "since": "2.4",
+      "status": "reserved",
+      "upstream": "wait-stmt",
+      "open_version": "v3.x",
+      "note": "等待语句的时间单位，随 等待 一并冻结"
+    }
+  ],
+  "pragmas": [
+    {
+      "id": "mode-zh",
+      "form": "[zz]",
+      "meaning": "中文模式（默认，可省略）",
+      "since": "2.3",
+      "constraints": "不进符号表、不可嵌套、独占一行、仅限顶层、一文件一模式"
+    },
+    {
+      "id": "mode-en",
+      "form": "[ee]",
+      "meaning": "英文模式",
+      "since": "2.3",
+      "constraints": "不进符号表、不可嵌套、独占一行、仅限顶层、一文件一模式"
+    }
+  ],
+  "builtinAttributes": [
+    {
+      "id": "width",
+      "zh": "宽",
+      "en": null,
+      "valueType": "number",
+      "since": "2.0",
+      "status": "open",
+      "note": "常用属性，规范 §9 只给出中文形；英文模式下的写法未定义（见 spec/README.md 已记录的待定案 A-1）"
+    },
+    {
+      "id": "center",
+      "zh": "居中",
+      "en": null,
+      "valueType": "switch",
+      "since": "2.0",
+      "status": "open",
+      "note": "开关属性，无值；英文形未定义（A-1）"
+    },
+    {
+      "id": "background",
+      "zh": "背景",
+      "en": null,
+      "valueType": "string",
+      "since": "2.0",
+      "status": "open",
+      "note": "色值字符串；英文形未定义（A-1）"
+    },
+    {
+      "id": "gap",
+      "zh": "间距",
+      "en": null,
+      "valueType": "number",
+      "since": "2.0",
+      "status": "open",
+      "note": "英文形未定义（A-1）"
+    },
+    {
+      "id": "border",
+      "zh": "边框",
+      "en": null,
+      "valueType": "switch",
+      "since": "2.0",
+      "status": "open",
+      "note": "见于 §11.2 示例；英文形未定义（A-1）"
+    }
+  ],
+  "styleWhitelist": [
+    "色",
+    "背景",
+    "边框",
+    "圆角",
+    "字号",
+    "字重",
+    "行高",
+    "间距",
+    "内距",
+    "外距",
+    "对齐",
+    "宽度"
+  ],
+  "eventFields": ["值", "索引", "项", "目标"]
+}

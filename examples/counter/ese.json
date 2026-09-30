@@ -1,0 +1,6 @@
+{
+  "name": "counter",
+  "mode": "ee",
+  "entry": "ese.bd",
+  "ui": "1.0"
+}

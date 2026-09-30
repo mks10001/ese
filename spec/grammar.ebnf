@@ -1,0 +1,168 @@
+(* =====================================================================
+   ese 语言形式化文法 —— 机器可读单一数据源
+   spec_version : 2.9
+   authority    : docs/ese语言规范-完整版.md §18 形式化文法（EBNF）
+   consumers    : ese check 解析器、ese fmt、VSCode 插件、解释器
+   ---------------------------------------------------------------------
+   与规范文档的三处规范化修正（勘误 E-1，2026-09-30）：
+     规范 §18 的 item 产生式未覆盖 import / assert / children-render
+     三个已在别处定义的产生式，导致它们从 program 不可达。
+     本文件将其补入 item，并同步回写规范。
+   ---------------------------------------------------------------------
+   @symbols（正式符号 17 对，冻结；CI 校验此块行数恒为 17）
+     [+ +]   panel            浮雕框       前端
+     [- -]   text             文字块       前端
+     [* *]   media            媒体块       前端
+     [= =]   input            输入框       前端
+     [c. .c] button           按钮         前端
+     [> <]   action-button    行为按钮     前端
+     [/ /]   route-page/route 路由         前端
+     [---]   divider          分割线       前端
+     [> >]   exec             执行块       逻辑
+     [? ?]   branch           分支块       逻辑
+     [?? ??] else-part        否则分支     逻辑
+     [~ ~]   loop             循环块       逻辑
+     [# #]   data             数据抽屉     数据
+     [$ $]   calc             计算器       数据
+     [< >]   component-call   组件调用     复用
+     [! !]   comment          注释         通用
+     [!!]    inline-sep       行内分隔符   通用
+   ---------------------------------------------------------------------
+   @reserved（预留，不在文法中；解析器遇到即报 ESE1005 / ESE1011）
+     [b d]  后端块    v3.0
+     [u n]  用户块    v3.0
+     [q p]  查询块    v3.0
+     [@ @]  网络块    v3.x
+     等待 / 异步 / 当 组件加载 / 当 组件卸载   v3.x
+   ===================================================================== *)
+
+(* ===== 顶层 ===== *)
+program      = pragma? , file-head , { item , LF } , file-tail ;
+pragma       = "[" , ("ee" | "zz") , "]" , LF ;
+file-head    = "[" , "ese.bd" , LF ;
+file-tail    = "]" ;
+module-file  = "[" , identifier , ".bd" , LF , { item , LF } , "]" ;
+
+(* ===== 条目 ===== *)
+item         = container | comment | doc-comment | import | assert
+             | divider | newline-gap ;
+newline-gap  = (* 空行，忽略 *) ;
+
+(* ===== 容器类（语句即容器：闭合即结束，对应「换行即结束」） ===== *)
+container    = panel | text | media | input | button | action-button
+             | route-page | route | branch | loop | data | calc
+             | component-def | component-call | exec | children-render ;
+
+panel        = "[" , "+" , attr* , LF , { item , LF } , "]" ;
+text         = "[" , "-" , text-body , "-" , "]" ;
+media        = "[" , "*" , filename , attr* , "*" , "]" ;
+             (* filename 禁含 "*" 与空白（v2.9）；带空白时用引号形式；
+                attr* 为 v2.9 新增的可访问性等属性，如 替代="…" *)
+input        = "[" , "=" , identifier , attr* , "=" , "]" ;
+             (* v2.9：attr* 承载 标签="…" 与 提示="…" *)
+button       = "[" , "c" , "." , SP , [ button-text , SP ] , "." , "c" , "]" , [ jump ] ;
+             (* 按钮定界（v2.8）：定界符 "c." 之后与 ".c" 之前各须至少一个空白；
+                紧贴形态（如 [c.a.c]）不是按钮，按列表解析（见规范 §7.5）；
+                终止序列为 SP + ".c]"；button-text 不得含 "]"；允许单个半角 ")" *)
+button-text  = { any-char - "]" } ;
+action-button= "[" , ">" , text-body , "<" , "]" , [ invoke ] ;
+invoke       = ("调用" | "call") , exec-name , [ args ] ;   (* v2.9：绑定处可传参 *)
+args         = "(" , [ value , { "," , value } ] , ")" ;
+route        = "[" , "/" , path , "/" ] ;
+jump         = ("跳转" | "goto") , path ;
+
+exec         = "[" , ">" , [ ("异步" | "async") ] ,
+               [ exec-name , [ params ] , ":" ] , LF , { item , LF } , "]" ;
+               (* v2.9：命名逻辑块可声明形参；无名执行块到达即执行；
+                  "异步" 修饰为预留语法，当前报 ESE1011 *)
+params       = "(" , identifier , { "," , identifier } , ")" ;
+
+branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "]" ;
+else-part    = "[" , "??" , LF , { item , LF } , "?]" ;
+condition    = or-expr ;
+or-expr      = and-expr , { ("或者" | "or") , and-expr } ;
+and-expr     = cmp-expr , { ("并且" | "and") , cmp-expr } ;
+cmp-expr     = arith-expr , [ compare-op , arith-expr ] ;
+compare-op   = "==" | "!=" | ">" | "<" | ">=" | "<=" ;
+arith-expr   = term , { ("+" | "-") , term } ;
+term         = unary , { ("*" | "/") , unary } ;
+unary        = [ ("非" | "not") | "-" ] , primary ;
+primary      = value | func-call | "(" , or-expr , ")" ;
+
+loop         = "[" , "~" , ( count | iterate ) , LF , { item , LF } , "]" ;
+count        = ( number , ("次" | "times") ) | ( identifier , ("次" | "times") ) ;
+iterate      = ("遍历" | "for") , identifier , ("为" | "as") , identifier , [ key-attr ] ;
+key-attr     = ("键" | "key") , "=" , value ;        (* v2.9：重渲染身份 *)
+
+data         = "[" , "#" , identifier , "=" , value , "#" , "]" ;
+calc         = "[" , "$" , [ ("派生" | "derived") ] , identifier , "=" , or-expr , "$" , "]" ;
+             (* v2.9：带 派生 修饰者为只读派生值 *)
+
+(* ===== 路由页面 ===== *)
+route-page   = "[" , "/" , ("页面" | "page") , path , LF , { item , LF } , "]" ;
+path         = path-segment , { "/" , path-segment } ;
+path-segment = identifier | "{" , identifier , "}" ;
+
+(* ===== 组件 ===== *)
+component-def  = "[" , "+" , ("组件" | "component") , identifier , LF ,
+                 { attr-line | item , LF } , "]" ;
+attr-line      = ("属性" | "prop") , prop-def , { "," , prop-def } ;
+prop-def       = identifier , [ type-name ] , [ "=" , value ] , [ ("必须" | "required") ] ;
+               (* v2.9：类型标注 + 必须；两者均可省，省略即 v2.2 的宽容属性 *)
+type-name      = "文字" | "数字" | "是否" | "名单" | "字典" | "任意"
+               | "text" | "number" | "bool" | "list" | "dict" | "any" ;
+component-call = "[" , "<" , qual-name , prop-pass* , ">" , "]" ;
+               | "[" , "<" , qual-name , prop-pass* , LF , { item , LF } , ">" , "]" ;
+qual-name      = identifier , { "." , identifier } ;   (* v2.9：命名空间引用 *)
+prop-pass      = identifier , "=" , ( string | number | identifier ) ;
+children-render= ("渲染" | "render") , ("内容" | "children") ;
+
+(* ===== 复用与杂项 ===== *)
+import       = ("引入" | "import") , string ,
+               ( ("的" | "from") , identifier , { "," , identifier }
+               | ("为" | "as") , identifier ) ;
+             (* v2.9：第二种形式绑定命名空间，默认命名空间 = 文件名去扩展名 *)
+comment      = "[" , "!" , { any-char } , "!" , "]" ;
+doc-comment  = "[" , "!" , ("文档" | "doc") , ":" , { any-char } , "!" , "]" ;
+             (* v2.9：文档注释，语义同普通注释，仅供 ese doc 消费 *)
+divider      = "[" , "-" , "-" , "-" , "]" ;
+inline-sep   = "[" , "!" , "!" , "]" ;
+assert       = ("断言" | "assert") , string , condition ;
+wait-stmt    = ("等待" | "wait") , number , ("秒" | "s") ;   (* 预留，报 ESE1011 *)
+
+(* ===== 表达式与值 ===== *)
+value        = string | number | identifier | member-access | event-object
+             | list-literal | dict-literal | boolean | interpolation ;
+event-object = ("事件" | "event") , "." , identifier ;   (* 仅执行块内可用（v2.9） *)
+interpolation= "{" , member-access , "}" ;       (* 仅 text-body 与 string 内 *)
+member-access= identifier , { "." , identifier } ;  (* 点号两侧不得有空白（v2.8） *)
+list-literal = "[" , [ value , { "," , value } ] , "]" ;   (* 仅值位置 *)
+dict-literal = "{" , dict-pair , { "," , dict-pair } , "}" ;(* 仅值位置 *)
+dict-pair    = string , ":" , value ;
+boolean      = "是" | "否" | "true" | "false" ;
+func-call    = identifier , "(" , [ value , { "," , value } ] , ")" ;
+attr         = identifier , "=" , value ;
+
+(* ===== 词法 ===== *)
+identifier   = letter , { letter | digit | "_" } ;   (* 中文字符视为 letter *)
+string       = '"' , { any-char } , '"' ;
+number       = digit , { digit } ;
+filename     = { any-char - "*" - SPACE }
+             | '"' , { any-char } , '"' ;   (* v2.9：文件名禁含空白；带空白用引号形式 *)
+SPACE        = (* 单个空白字符 *) ;
+text-body    = { any-char - "-" } | interpolation ;
+SP           = (* 至少一个空白字符（半角空格或制表符）。普通词法间隙自动忽略，
+                  但 button 产生式中的 SP 是语法成份，不可省（见 §7.5） *) ;
+exec-name    = identifier | "全局" | "global" ;
+letter       = (* Unicode 字母或汉字 *) ;
+digit        = "0" .. "9" ;
+any-char     = (* 除换行外的任意字符 *) ;
+
+(* ===== 不可由文法推导、必须显式拒绝的构造 =====
+   reserved-block  = "[" , ("b" , "d" | "u" , "n" | "q" , "p" | "@" , "@") , "]" ;
+                     → ESE1005
+   reserved-async  = wait-stmt | "异步" 修饰的 exec | 生命周期钩子 ;
+                     → ESE1011
+   cross-mode      = 引入 指向另一模式的 .bd 文件 ;
+                     → ESE2017 / ESE4001
+   ===================================================================== *)

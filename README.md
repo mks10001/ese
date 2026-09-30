@@ -2,21 +2,33 @@
 
 > 一门用对称括号书写的极简全栈语言 —— 一套符号同时描述页面、数据与逻辑，写完就是网站。
 
-![spec](https://img.shields.io/badge/spec-v2.9-2563eb)
-![impl](https://img.shields.io/badge/impl-v0.0%20(not%20runnable)-b45309)
+![spec](https://img.shields.io/badge/spec-v2.10-2563eb)
+![cli](https://img.shields.io/badge/cli-v0.1.0-16a34a)
+![lang](https://img.shields.io/badge/语言-尚不可运行-b45309)
 ![symbols](https://img.shields.io/badge/符号表-17%20对-16a34a)
 
-**仓库**：<https://github.com/mks10001/ese> ｜ **规范**：[完整版](docs/ese语言规范-完整版.md) ｜ **提案**：[RFC 流程](rfcs/README.md) ｜ **单一数据源**：[spec/](spec/README.md)
+**仓库**：<https://github.com/mks10001/ese> ｜ **规范**：[完整版](docs/ese语言规范-完整版.md) ｜ **提案**：[RFC 流程](rfcs/README.md) ｜ **单一数据源**：[spec/](spec/README.md) ｜ **工具链**：[tools/](tools/README.md)
 
-**当前状态：只有规范，没有实现。**
+**当前状态：规范完成，工具链开工，语言本身还不能运行。**
 
 | 项目 | 版本 | 说明 |
 |------|------|------|
-| 规范（spec） | **v2.9** | 完整、已冻结符号表，见 [`docs/ese语言规范-完整版.md`](docs/ese语言规范-完整版.md) |
-| 实现（CLI） | **v0.0** | **尚无任何可运行代码**。`ese` 命令不存在，本文档中的示例目前都不能执行 |
-| 可用性 | — | **不可用于生产，也不可用于教学演示** —— 请等 `ese check` 与解释器 v0.1 发布 |
+| 规范（spec） | **v2.10** | 完整、符号表冻结 17 对，见 [`docs/ese语言规范-完整版.md`](docs/ese语言规范-完整版.md) |
+| 单一数据源 | **已就绪** | [`spec/`](spec/README.md)：`grammar.ebnf` / `keywords.json`（50 条）/ `diagnostics.json`（50 码） |
+| 工具链（CLI） | **v0.1.0** | `ese fmt --migrate`、`ese spec verify` 可用，46 项自测通过 |
+| 语言可执行性 | — | **仍不可运行**。没有解释器，本文档中的示例都还不能执行，`ese check` 也尚未发布 |
 
-> 我们宁可把状态写难看，也不愿意让任何人在 README 里看到示例就以为它能跑。什么时候这里写着 `impl v0.1`，它就真的能跑。
+> 我们宁可把状态写难看，也不愿意让任何人在 README 里看到示例就以为它能跑。什么时候这里写着「语言可执行性：v0.1」，它就真的能跑。
+
+工具链现在可以装了就能跑，**不需要任何依赖、不需要构建**（Node ≥ 22.18 直接加载 TypeScript）：
+
+```bash
+node tools/src/cli.ts spec verify                # 校验三个单一数据源
+node tools/src/cli.ts fmt --migrate .            # dry-run：打印差异，不动文件
+node tools/src/cli.ts fmt --migrate --write .    # 确认后落盘
+```
+
+它**不是**解释器——`ese fmt` 只做缩进与历史语法迁移，`ese spec verify` 只校验元数据。区别很重要。
 
 ---
 
@@ -27,7 +39,7 @@ ese 是一个**面向中文用户的网页构建语言**。它的目标不是取
 三条不可动摇的设计约束：
 
 1. **对称即语法**：每个符号都是一对括号，左右呼应。看见开头就知道结尾，配对错误肉眼可查。
-2. **符号冻结**：正式符号恒定为 **17 对**。任何新能力只能通过关键字、属性、内置函数与编译目标实现。规范从 v2.0 到 v2.9 新增了字面量、路由、状态、组件、测试、SSR、双语、契约层、错误边界、诊断体系——**一对括号都没加**。
+2. **符号冻结**：正式符号恒定为 **17 对**。任何新能力只能通过关键字、属性、内置函数与编译目标实现。规范从 v2.0 到 v2.10 新增了字面量、路由、状态、组件、测试、SSR、双语、契约层、错误边界、诊断体系、迁移工具——**一对括号都没加**。
 3. **中文优先，双语对等**：默认中文关键字，`[ee]` 英文模式完全对等；两种模式**互不互通**（一个构建单元内语言统一，避免中英混排）。
 
 ---
@@ -121,10 +133,10 @@ ese 是一个**面向中文用户的网页构建语言**。它的目标不是取
 
 | 阶段 | 产物 | 状态 |
 |------|------|------|
-| 规范 | v2.9 完整规范 + 增量文档 | ✅ 已完成 |
-| ① | `ese fmt --migrate` —— 自动迁移历史按钮写法 | ⏳ 计划中（**优先级最高**，纯文本改写） |
-| ② | `keywords.json` / `diagnostics.json` / `grammar.ebnf` 三个单一数据源 | ⏳ 计划中 |
-| ③ | `ese check` 静态检查（含属性契约校验与全部诊断码） | ⏳ 计划中 |
+| 规范 | v2.10 完整规范 + 增量文档 | ✅ 已完成 |
+| ① | `spec/` 三个单一数据源（`grammar.ebnf` / `keywords.json` / `diagnostics.json`） | ✅ 已完成（50 关键字 / 50 诊断码） |
+| ② | `ese fmt --migrate` —— 自动迁移历史按钮写法 | ✅ 已完成（六条迁移规则，46 项自测通过） |
+| ③ | `ese check` 静态检查（读文法建解析器，消费全部诊断码） | ⏳ **下一步** |
 | ④ | VSCode 插件（TextMate 高亮 + 中英 snippets 补全） | ⏳ 计划中 |
 | ⑤ | 解释器 v0.1（前端层 → HTML） | ⏳ 计划中 |
 | ⑥ | 解释器 v0.2（逻辑 / 状态 / 组件 / 插槽 / 测试） | ⏳ 计划中 |
@@ -133,21 +145,37 @@ ese 是一个**面向中文用户的网页构建语言**。它的目标不是取
 
 **验收门槛**：v3.0 之前不谈「语言完成」。第一个里程碑的定义是——`ese build` 能生成一个**能点、能跳转、能保存数据**的页面。
 
+> 顺序与规范第十九节一致，但 ① ② 调换了位置：数据源必须先于迁移工具，因为「旧写法 → 新写法」的对照表本身就出自 `keywords.json` 与 `diagnostics.json`。
+
 ---
 
 ## 快速开始
 
-**目前无法运行。** 实现的第一个里程碑是 `ese check` 与 `ese fmt --migrate`；在此之前，仓库里只有规范与示例。
+### 工具链：现在就能跑
 
-未来的预期用法（**尚未实现，勿据此使用**）：
+不需要 `npm install`，不需要构建。Node ≥ 22.18 内置 TypeScript 类型擦除，直接运行源码：
 
 ```bash
-ese check          # 静态检查：括号配对、属性契约、诊断码
-ese build          # 静态生成：页面预渲染为 HTML
-ese serve          # 服务端渲染 + 水合
-ese test           # 运行 *.test.bd，双语项目执行双模式回归
-ese doc            # 生成组件 API 文档
+node tools/src/cli.ts spec verify                  # 校验三个单一数据源的一致性
+node tools/src/cli.ts fmt --rules                  # 查看全部六条迁移规则
+node tools/src/cli.ts fmt --migrate .              # dry-run：打印差异，不改盘
+node tools/src/cli.ts fmt --migrate --write .      # 确认无误后落盘
+node tools/test/run.ts                             # 46 项自测
 ```
+
+`ese fmt` **默认 dry-run**。这是刻意的：在 `ese check` 可用之前改写没有二次校验，静默破坏用户代码的风险高于多敲一个 `--write`。
+
+### 语言：还不能运行
+
+```bash
+ese check          # ⏳ 静态检查：括号配对、属性契约、诊断码
+ese build          # ⏳ 静态生成：页面预渲染为 HTML
+ese serve          # ⏳ 服务端渲染 + 水合
+ese test           # ⏳ 运行 *.test.bd，双语项目执行双模式回归
+ese doc            # ⏳ 生成组件 API 文档
+```
+
+**以上五条尚未实现，勿据此使用。** 仓库里现在只有规范、元数据与静态处理工具。
 
 ---
 
@@ -159,23 +187,34 @@ ese doc            # 生成组件 API 文档
 ├── LICENSE                    # Apache-2.0 —— 实现代码（tools/ 等）
 ├── LICENSE-DOCS               # CC BY 4.0 —— 规范文档与报告（docs/、spec/）
 ├── .gitignore
+├── .gitattributes             # 统一 LF，避免跨平台全文件 diff
 ├── docs/
-│   ├── ese语言规范-完整版.md     ← 唯一权威规范（22 节）
+│   ├── ese语言规范-完整版.md     ← 唯一权威规范（22 节，v2.10）
 │   ├── ese语言规范-v2.9.md       ← 最新增量修订
 │   ├── ese语言规范-v2.0…v2.4.md  ← 历史增量修订
 │   ├── 原始草案.txt              ← v1.0 手写草案（存档，不修改）
+│   ├── Essence（本质）.txt       ← 早期构想存档
 │   ├── GitHub发布清单.md         ← 开源发布检查项
-│   └── reports/                 ← 评估与对比报告（HTML）
-├── spec/                      # 机器可读单一数据源（⏳ 三个文件计划中，见 spec/README.md）
-│   ├── grammar.ebnf
-│   ├── keywords.json
-│   └── diagnostics.json
+│   └── reports/                 ← 评估与对比报告（HTML，6 份）
+├── spec/                      # ✅ 机器可读单一数据源（工具链的唯一元数据来源）
+│   ├── grammar.ebnf           ← 完整文法 + @symbols（17 对）+ @reserved
+│   ├── keywords.json          ← 50 条中英关键字 + pragma + 内置属性 + 样式白名单
+│   ├── diagnostics.json       ← 50 个诊断码（ESE1xxx–4xxx）+ 中英消息模板
+│   └── README.md              ← 四项 CI 校验说明 + 已记录的待定案 A-1…A-4
 ├── rfcs/                      # 语义变更提案（提案 → 讨论 → 采纳）
 ├── examples/                  # 示例项目（中文 / 英文各一套，模式不混用）
-└── tools/                     # CLI、检查器、编辑器插件
+│   ├── 计数站/                 # [zz] 组件状态、派生值、事件、路由、遍历键
+│   └── counter/               # [ee] 同一份语义的英文对照
+└── tools/                     # ✅ CLI v0.1.0（零依赖、零构建）
+    ├── README.md              # 用法、迁移规则、设计约束
+    ├── bin/ese.mjs
+    ├── src/                   # cli / spec / diagnostics / scan / rules / commands
+    └── test/run.ts            # 46 项自测
 ```
 
 `docs/` 下的每一份增量规范都**保留不删**。版本记录里被推翻的决定（含按钮定界符的四次改型）是这门语言最有效的教材。
+
+`spec/README.md` 里列着四条**已记录但尚未回答**的规范缺口（A-1 常用属性的英文形、A-2 输入框缺标签的严重级别、A-3 组件名与关键字同名、A-4 `ese.json` 的英文字段名）。它们是真实缺口而不是笔误，留在那里等 RFC，而不是就地发明。
 
 ---
 
@@ -186,16 +225,18 @@ ese doc            # 生成组件 API 文档
 1. **符号表不讨论**。17 对是硬约束，不接受「再加一个括号」类提案——这类 Issue 会被直接关闭并附本节链接。
 2. **语义变更走 RFC**：在 `rfcs/` 提目录（编号 + 提案文档），说明动机、语法、对现有代码的影响、是否有破坏性与迁移方案。
 3. **破坏性变更必须附迁移工具**，否则不予受理。
-4. **双语约定**：文档与报错消息**不得**手工维护中英两份。关键字与消息模板由 `keywords.json` / `diagnostics.json` 生成；直接改生成产物会被拒绝。
-5. **实现优先于规范**：当前仓库最缺的是代码。`ese fmt --migrate`、`ese check`、VSCode 插件的 PR 欢迎度高于任何规范润色。
+4. **双语约定**：文档与报错消息**不得**手工维护中英两份。关键字与消息模板由 `keywords.json` / `diagnostics.json` 生成；直接改生成产物会被拒绝。`ese spec verify` 会拦住不一致的 PR。
+5. **实现优先于规范**：当前仓库最缺的是代码。`ese check`、VSCode 插件、解释器的 PR 欢迎度高于任何规范润色。
+6. **改文法要双向同步**：改 `spec/grammar.ebnf` 必须同时改规范 §18，反之亦然；PR 需附 `ese spec verify` 通过截图。
+7. **迁移工具不得猜测**：改写类规则在判据不足时必须报错拒绝（`ESE4004`），不得「按最可能的意图」替换。静默改义是本项目最不可接受的缺陷类型。
 
 ---
 
 ## 治理与版本口径
 
 - **规范版本**（`2.x`）与**实现版本**（CLI 独立版本号）解耦。
-- 每个 Release 同时标注三项：**规范版本 / 实现版本 / 实现状态**。
-- Tag 规则：规范用 `spec-v2.9`，实现用 `cli-v0.1.0`。
+- 每个 Release 同时标注三项：**规范版本 / 实现版本 / 语言可执行性**。
+- Tag 规则：规范用 `spec-v2.10`，实现用 `cli-v0.1.0`。
 - 语义变更流程：RFC 采纳 → 次版本发**弃用警告** → 下一个次版本破坏。详见规范第二十一节。
 
 ---

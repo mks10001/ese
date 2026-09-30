@@ -806,20 +806,25 @@ file-tail    = "]" ;
 module-file  = "[" , identifier , ".bd" , LF , { item , LF } , "]" ;
 
 (* ===== 条目 ===== *)
-item         = container | comment | divider | pragma | newline-gap ;
+item         = container | comment | doc-comment | import | assert
+             | divider | newline-gap ;
 newline-gap  = (* 空行，忽略 *) ;
+             (* 勘误 E-1（v2.10）：v2.9 的 item 未覆盖 import / assert / children-render，
+                三者因此在文法中从 program 不可达；现补入。pragma 同时移出 item——
+                它只能出现在 program 顶层（文法要点 4），此前列入 item 属列举冗余。 *)
 
 (* ===== 容器类 ===== *)
 container    = panel | text | media | input | button | action-button
              | route-page | route | branch | loop | data | calc
-             | component-def | component-call | exec ;
+             | component-def | component-call | exec | children-render ;
 
 panel        = "[" , "+" , attr* , LF , { item , LF } , "]" ;
 text         = "[" , "-" , text-body , "-" , "]" ;
 media        = "[" , "*" , filename , attr* , "*" , "]" ;
              (* filename 禁含 "*" 与空白（v2.9）；带空白时用引号形式；
                 attr* 为 v2.9 新增的可访问性等属性，如 替代="…" *)
-input        = "[" , "=" , identifier , "=" , "]" ;
+input        = "[" , "=" , identifier , attr* , "=" , "]" ;
+             (* v2.9：attr* 承载 标签="…" 与 提示="…"（勘误 E-1 补入，v2.10） *)
 button       = "[" , "c" , "." , SP , [ button-text , SP ] , "." , "c" , "]" , [ jump ] ;
              (* 按钮定界 (v2.8)：定界符 "c." 之后与 ".c" 之前各须至少一个空白；
                 紧贴形态（如 [c.a.c]）不是按钮，按列表解析（见 7.5）；
@@ -835,6 +840,7 @@ exec         = "[" , ">" , [ ("异步" | "async") ] ,
                [ exec-name , [ params ] , ":" ] , LF , { item , LF } , "]" ;
                (* v2.9：命名逻辑块可声明形参；无名执行块到达即执行 *)
 params       = "(" , identifier , { "," , identifier } , ")" ;
+exec-name    = identifier | "全局" | "global" ;   (* 勘误 E-1 补入，v2.10：invoke 与 exec 均引用 *)
 
 branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "]" ;
 else-part    = "[" , "??" , LF , { item , LF } , "?]" ;
@@ -928,6 +934,8 @@ SP           = (* 至少一个空白字符（半角空格或制表符）。普�
 10. **`键=` 是 `iterate` 的可选尾巴**，缺省时退回按序号重渲染（v2.9）。
 11. **命名空间引用 `qual-name` 只出现在引用位置**（`component-call` 与模块成员引用），值位置的点仍是 `member-access`，两者不重叠（v2.9）。
 12. **`doc-comment` 优先于 `comment` 匹配**：以 `文档:` / `doc:` 开头的注释按文档注释处理，其余为普通注释（v2.9）。
+13. **不可达产生式的清除**（勘误 E-1，v2.10）：`item` 必须覆盖所有可作顶层语句的产生式。v2.9 遗漏了 `import`、`assert`、`children-render`，使 `引入`、`断言`、`渲染 内容` 三条已定义的语法从 `program` 不可达——这是文法自身的缺陷，与语义无关。本版补齐并把 `pragma` 移出 `item`（它只能出现在 `program` 顶层，见第 4 条）。
+14. **单一数据源优先**：`spec/grammar.ebnf` 与本节互为镜像；两者不一致时以 `spec/` 为准并修正本节（见 `spec/README.md`）。一致性与不可达性由 `ese spec verify` 校验。
 
 ---
 
@@ -946,6 +954,8 @@ SP           = (* 至少一个空白字符（半角空格或制表符）。普�
 | ⑨ | v3.0 | 后端层 `[b d] [u n] [q p] [@ @]` + 异步预留语法解冻 | 单机完整登录程序可跑 |
 
 **实现期需定案（P0）**：① `keywords.json`（中英关键字单一数据源）；② `diagnostics.json`（错误码与消息模板单一数据源，报错语言跟随文件模式）；③ 属性契约静态校验（类型 + `必须` + 拼写警告）；④ 容错边界的捕获范围与组件边界策略（**建议不穿透**）；⑤ 派生值依赖图与循环检测；⑥ 遍历键与 SSR 水合的一致策略；⑦ 样式白名单 12 项定稿；⑧ `ese fmt --migrate` 先于解释器；⑨ `ese test` 双模式回归；⑩ 具名插槽（多插槽）与列表模板变量作用域。
+
+**实施进度（2026-09-30，CLI v0.1.0）**：元数据前置已落地——`spec/grammar.ebnf`、`spec/keywords.json`、`spec/diagnostics.json` 三个单一数据源就绪（兑现 P0 清单第 ①② 项），`ese spec verify` 校验四项一致性（文法关键字归属、中英词组唯一性、诊断占位符对称性、符号对恒为 17）。上表的第 ③④ 步（`ese fmt` 与 `ese fmt --migrate`）已实现并通过 46 项自测：六条迁移规则覆盖 v2.1 → v2.8 的全部历史破坏性变更，位置裁决沿用 §7.5，判据不足时以 `ESE4004` 拒绝改写而非猜测。P0 第 ⑦ 项的样式白名单已录为 `keywords.json` 的 `styleWhitelist`；第 ③ 项（属性契约静态校验）待 `ese check`；第 ⑨ 项双模式回归待 `ese test`。编写 `grammar.ebnf` 时发现并修正文法勘误 E-1（见 §18 文法要点 13、版本记录 v2.10）。**P0 第 ① 项遗留一处缺口**：常用容器属性（`宽` / `居中` / `背景` / `间距` / `边框`）的英文形在本规范中从未定义，已记入 `spec/README.md` 待定案清单，需下一个 RFC 处理。
 
 ---
 
@@ -1092,7 +1102,8 @@ ese 的长期风险不是语法，而是**规则漂移**：v2.5 → v2.8 四版�
 | v2.7 | **按钮定界符改为 `[c. 文字 .c]`**（`c` = click，点号定界，跨中英模式通用）：与列表/括号表达式**词法上完全不同源**，此前的两种同形（`[(a+b)]`、`[((x))]`）全部消灭；按钮文字可含单层半角括号；仅存极端构造 `[c.a.c]` 由位置裁决兜底；ese check 提示旧写法改型（见 7.5） |
 | v2.8 | **按钮定界符的空白升格为语法成份**：写作 `[c. 文字 .c]`，`c.` 之后与 `.c` 之前各须一个空格；**v2.7 的残留同形 `[c.a.c]` 被消灭**（紧贴形态只能是列表/点语法），按钮与列表之间不再存在任何同形构造，位置裁决降级为诊断提示；配套新增**点语法必须紧贴**规则（`用户 . 名字` 非法，见 6.2）；EBNF 引入 `SP` 终结符并写入 `button`、`member-access` 产生式；ese check 增两条诊断（见 7.5） |
 | **v2.9** | **契约层**：属性类型标注与 `必须`（11.1）、安全取值 `取` / `取或`（6.2、7.3）、错误边界 `容错` / `兜底`（8.4）。**表达力**：遍历键 `键=`（6.3）、派生值 `派生`（13.4）、事件传参与事件对象 `事件`（10 节）、样式逃生舱 `样式` / `类`（9 节，12 项白名单）、可访问性 `替代` / `标签` / `提示`（9 节，含媒体块文件名收紧——**破坏性**）。**工程治理**：诊断规范与 `ESE` 错误码 + `diagnostics.json`（8.3）；`ese.json` 清单与模块命名空间（2 节、11.3）；文档注释与 `ese doc`（11.5）；`ese fmt --migrate` 迁移工具（19 节）；治理与冻结流程（21 节）。符号表仍 17 对 |
+| **v2.10（勘误）** | **文法勘误 E-1**：`item` 补入 `import` / `assert` / `children-render`（v2.9 漏列导致三者从 `program` 不可达），`pragma` 移出 `item`；补入未定义的 `exec-name`；`input` 补 `attr*`（v2.9 已引入 `标签` / `提示` 却未反映在产生式）。**不含语义变更**，符号表仍 17 对。勘误来源：`spec/grammar.ebnf` 编写时发现（见 §19） |
 
 ---
 
-*完整规范 v2.9 定稿（含 v2.0 → v2.9 全部修订）。语言层、语法层与契约层的公开问题已关闭；按钮与列表之间不存在同形构造，错误边界与诊断体系已定义。下一步为工具链实现：`ese fmt --migrate` → ese check → 解释器 v0.1。*
+*完整规范 v2.10 定稿（含 v2.0 → v2.10 全部修订）。语言层、语法层与契约层的公开问题已关闭；按钮与列表之间不存在同形构造，错误边界与诊断体系已定义，文法已消除不可达产生式。工具链已开工：`spec/` 三个单一数据源与 `ese fmt`（含 `--migrate`）已实现并自测通过（CLI v0.1.0），下一步为 `ese check` → 解释器 v0.1。*

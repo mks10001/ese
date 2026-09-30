@@ -1,0 +1,26 @@
+{
+  "name": "ese",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ese 语言命令行工具链 —— 规范 v2.9 / CLI v0.1.0。包含 ese fmt（含 --migrate 历史改写迁移）与 ese spec verify（单一数据源校验）。",
+  "type": "module",
+  "license": "Apache-2.0",
+  "bin": {
+    "ese": "./bin/ese.mjs"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "ese": "node src/cli.ts",
+    "fmt": "node src/cli.ts fmt",
+    "spec:verify": "node src/cli.ts spec verify",
+    "test": "node test/run.ts",
+    "check:types": "tsc --noEmit"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "devDependencies": {}
+}

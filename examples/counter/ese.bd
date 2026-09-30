@@ -1,0 +1,36 @@
+[ee]
+[! English-mode sample: component state, derived value, events, routing, loop key !]
+[ese.bd
+  [! ===== component ===== !]
+  [+ component Counter
+    prop start number = 0
+    [# current = start #]
+    [$ derived double = current * 2 $]
+    [+ center
+      [- count: {current} (double: {double}) -]
+      [> add <] call add
+    +]
+    [> add :
+      [$ current = current + 1 $]
+    >]
+  +]
+
+  [! ===== pages ===== !]
+  [/ page home
+    [- Welcome back -]
+    [< Counter start=10 >]
+
+    [# todo = ["buy milk", "write code"] #]
+    [~ for todo as item key={item}
+      [- {item} -]
+    ~]
+
+    [c. to about .c] goto about
+  /]
+
+  [/ page about
+    [- About this site -]
+    [---]
+    [c. back home .c] goto home
+  /]
+]
