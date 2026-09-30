@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ese 语言与现有语言对比报告</title>
+<style>
+  :root{
+    --ink:#1a1d23; --sub:#5a6270; --line:#e4e7ec; --bg:#f7f8fa; --card:#ffffff;
+    --accent:#4f5be8; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --good-bg:#ecfdf5; --warn-bg:#fffbeb; --bad-bg:#fef2f2; --accent-bg:#eef0fe;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px;}
+  header h1{font-size:28px;letter-spacing:1px;}
+  header .meta{color:var(--sub);font-size:13px;margin-top:8px;}
+  h2{font-size:20px;margin:40px 0 16px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:20px 0 8px;}
+  p{margin:8px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:14px 0;}
+  .verdict{background:linear-gradient(135deg,#eef0fe,#fdfdff);border:1px solid #d6daff;}
+  .verdict strong{color:var(--accent);}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;margin-right:6px;}
+  .t-good{background:var(--good-bg);color:var(--good);}
+  .t-warn{background:var(--warn-bg);color:var(--warn);}
+  .t-bad{background:var(--bad-bg);color:var(--bad);}
+  .t-info{background:var(--accent-bg);color:var(--accent);}
+  code{font-family:Consolas,"Courier New",monospace;background:#f0f2f5;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:13.5px;color:#c7254e;}
+  pre{background:#272b33;color:#e8eaf0;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.6;margin:10px 0;font-family:Consolas,monospace;white-space:pre-wrap;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0;background:var(--card);}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:#f0f2f6;font-weight:600;}
+  .plus{color:var(--good);font-weight:600;}
+  .minus{color:var(--bad);font-weight:600;}
+  .lang-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+  .lang-head h3{margin:0;}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:720px){.cols{grid-template-columns:1fr;}}
+  footer{margin-top:60px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ese 语言与现有语言对比报告</h1>
+  <div class="meta">对比基准：ese v2.1 · 日期：2026-09-30 · 对比对象：HTML+CSS+JS / JSX(React) / Vue SFC / Svelte / 小程序 WXML / Pug / QML / Scratch / Python</div>
+</header>
+
+<h2>一、总体定位结论</h2>
+<div class="card verdict">
+  <p><strong>一句话结论：</strong>ese 与九个对比对象<strong>没有正面战场</strong>。所有成熟语言都默认「用户会打英文、会用键盘快捷键、能接受报错是英文的」；ese 押注的恰恰是这个假设之外的人群——<strong>把写网页的门槛压到「会中文、会打字」</strong>，并让结构可以直接映射为拖拽节点。这条赛道上真正的前身只有 Scratch（教学）和低代码平台（商业闭源），<strong>「中文开源的对称括号全栈语言」目前是空位</strong>。代价同样明确：ese 永远打不过 JSX 的表达力、HTML 的生态、Python 的通用性——它不需要打赢，只需要在自己选的赛道上不可替代。</p>
+</div>
+
+<h2>二、总对比矩阵</h2>
+<div class="card">
+<table>
+  <tr><th>维度</th><th>ese v2.1</th><th>HTML+CSS+JS</th><th>JSX (React)</th><th>Vue SFC</th><th>Svelte</th><th>小程序 WXML</th><th>Pug</th><th>QML</th><th>Scratch</th><th>Python</th></tr>
+  <tr><td>上手门槛</td><td class="plus">极低（中文）</td><td>低</td><td>中</td><td>中</td><td>中</td><td>低</td><td>低</td><td>中</td><td class="plus">极低</td><td>低</td></tr>
+  <tr><td>结构可读性</td><td class="plus">高</td><td>中</td><td>中</td><td>中</td><td>中</td><td>中</td><td>高</td><td>高</td><td class="plus">高（图形化）</td><td>高</td></tr>
+  <tr><td>可视化编辑潜力</td><td class="plus">极高</td><td>中</td><td>中</td><td>中</td><td>中</td><td>中</td><td>中</td><td class="plus">高</td><td class="plus">原生图形化</td><td>弱</td></tr>
+  <tr><td>表达能力</td><td class="minus">弱（前端层）</td><td class="plus">极强</td><td class="plus">极强</td><td class="plus">强</td><td class="plus">强</td><td>强</td><td>中（仅模板）</td><td>强</td><td>弱</td><td class="plus">极强</td></tr>
+  <tr><td>组件复用</td><td>有（v2.1 新增）</td><td>无原生</td><td class="plus">极强</td><td class="plus">强</td><td class="plus">强</td><td>强</td><td>有 mixin</td><td class="plus">强</td><td>有（自制积木）</td><td>强</td></tr>
+  <tr><td>中文原生支持</td><td class="plus">唯一</td><td class="minus">无</td><td class="minus">无</td><td class="minus">无</td><td class="minus">无</td><td>模板可中文</td><td class="minus">无</td><td class="minus">无</td><td>多语言含中文</td><td class="minus">无（标识符可中文但不主流）</td></tr>
+  <tr><td>生态/库</td><td class="minus">零</td><td class="plus">最强</td><td class="plus">最强</td><td class="plus">强</td><td>中</td><td>中（微信背书）</td><td>弱</td><td>中（Qt）</td><td>中（教育）</td><td class="plus">最强之一</td></tr>
+  <tr><td>性能</td><td class="minus">未知（未实现）</td><td>高</td><td>高</td><td>高</td><td class="plus">极高（编译期）</td><td>高</td><td>高（编译到HTML）</td><td>高</td><td class="minus">低</td><td>中</td></tr>
+  <tr><td>工具链</td><td class="minus">规划中</td><td class="plus">最强</td><td class="plus">强</td><td class="plus">强</td><td>中</td><td>中</td><td>中</td><td>中</td><td>专用编辑器</td><td class="plus">强</td></tr>
+  <tr><td>部署目标</td><td>网页（规划）</td><td>网页</td><td>网页/移动端</td><td>网页/移动端</td><td>网页</td><td>微信生态</td><td>网页</td><td>桌面/嵌入式</td><td>教育平台</td><td>全平台</td></tr>
+</table>
+</div>
+
+<h2>三、逐个对比：ese 赢在哪、输在哪</h2>
+
+<div class="card">
+  <div class="lang-head"><h3>vs HTML + CSS + JavaScript</h3><span class="tag t-info">最直接的参照系</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> 中文关键字 vs 英文标签+英文报错，门槛差一个量级。</li>
+        <li><span class="plus">+</span> 对称括号自校验：配对错误肉眼可查；HTML 开闭标签错位是初学者头号挫败源。</li>
+        <li><span class="plus">+</span> 一套符号统一页面、逻辑、数据；三件套要同时学 HTML/CSS/JS 三种心智模型。</li>
+        <li><span class="plus">+</span> 块状结构直接映射拖拽节点树，天然适配可视化编辑器。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> 表达能力：JS 有闭包/原型/异步/Canvas/WebGL，ese 前端层只有框和按钮。</li>
+        <li><span class="minus">−</span> 生态：三件套背后是整个互联网（MDN、npm、Stack Overflow），ese 是零。</li>
+        <li><span class="minus">−</span> 输入效率：密集半角括号在中文输入法下反复切换，HTML 标签反而有 Emmet 补全。</li>
+        <li><span class="minus">−</span> CSS 的样式能力（动画、响应式、Grid）ese 需要重新发明，工作量巨大。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs JSX (React)</h3><span class="tag t-info">「UI 即代码」路线的对手</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> 不需要先学会一门通用编程语言（JS）才能写界面；JSX 的「低门槛」是相对 React 类组件而言的。</li>
+        <li><span class="plus">+</span> 命名触发器（<code>调用 提交</code>）比 <code>onClick={handleSubmit}</code> 对新手更直白。</li>
+        <li><span class="plus">+</span> JSX 的 <code>className</code>、<code>htmlFor</code>、自闭合标签等历史包袱，ese 没有。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> JSX 里任意 JS 表达式随时可用；ese 的插值只有 <code>{变量}</code>，无函数、无三元。</li>
+        <li><span class="minus">−</span> React 生态：路由、状态管理、UI 组件库、测试、SSR 全部现成；ese 全部要自建。</li>
+        <li><span class="minus">−</span> React 有 Hooks 解决复用；ese 组件无状态、无生命周期，复杂交互撑不住。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs Vue 单文件组件 (SFC)</h3><span class="tag t-info">结构上最像的成熟方案</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> SFC 是「一个文件三段式」（template/script/style），ese 是「一套符号一体式」，对新手认知负担更小。</li>
+        <li><span class="plus">+</span> Vue 的指令体系（<code>v-if / v-for / v-model</code>）仍是英文缩写；ese 的 <code>[? ]</code>、<code>[~ ]</code>、<code>[= =]</code> 全部图形化。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> Vue 的响应式系统（数据变→视图自动变）是十年打磨的成果；ese 连数据结构都还没有。</li>
+        <li><span class="minus">−</span> Vue 支持 CSS scoped、过渡动画、组合式 API；ese 的样式能力只有容器属性。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs Svelte</h3><span class="tag t-info">编译期哲学的提醒</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> 语法面（符号少、中文）依旧全面更低。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> Svelte 证明「语言本身小、编译器干活」是可行且优雅的路线——这对 ese 是好消息（运行时小）也是压力（编译器质量决定一切，ese 还没有编译器）。</li>
+        <li><span class="minus">−</span> Svelte 编译产物是零框架依赖的原生 JS；ese 若编译到 HTML+JS，产物质量是存活关键。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs 小程序 WXML / WXSS</h3><span class="tag t-info">中文世界最大的声明式 UI</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> WXML 语法仍是 <code>wx:if</code>、<code>bindtap</code> 英文指令；ese 完全中文。</li>
+        <li><span class="plus">+</span> WXML 绑死微信生态；ese 编译目标是开放 Web。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> 小程序有微信官方背书、十几亿用户入口、完整云开发；ese 什么都没有。</li>
+        <li><span class="minus">−</span> 启示：即便大厂做「更简单的 UI 语言」，用户接受度也要靠生态撬动——ese 的推广策略必须回答「为什么有人用」。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs Pug（原 Jade）</h3><span class="tag t-info">语法简化路线的前车之鉴</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> Pug 砍标签但保英文；ese 中文关键字更彻底。</li>
+        <li><span class="plus">+</span> Pug 靠缩进表达层级，缩进错了全盘错；ese 对称括号对缩进不敏感，更鲁棒。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> Pug 的教训最重要：它证明了「比 HTML 更简洁的模板语法」<strong>不足以成为一门语言的立身之本</strong>——Pug 最终退化为 HTML 的预处理器。ese 若只做「更好看的 HTML」，结局会一样，必须靠全栈语义和可视化工具差异化。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs QML (Qt)</h3><span class="tag t-info">声明式块状 UI 的成熟范本</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> QML 语法英文且需理解 JS 子集；ese 更低门槛。</li>
+        <li><span class="plus">+</span> QML 主要面向桌面/嵌入式；ese 押注网页，受众更广。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> QML 是「块状声明式 UI」最成功的先例：属性驱动布局、声明绑定、组件树——ese 的容器属性设计可以大量借鉴 QML 的成熟模式（锚定布局、属性绑定、别名）。</li>
+        <li><span class="minus">−</span> QML 有完善的工具链（设计工具 Qt Design Studio 双向同步）——这正是 ese 可视化编辑器要对标的高度。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs Scratch</h3><span class="tag t-info">低门槛赛道的在位者</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> Scratch 是积木拖拽，输出的是动画/游戏，<strong>做不了真实网页</strong>；ese 写完就是能部署的网站——「学的就是真东西」。</li>
+        <li><span class="plus">+</span> Scratch 用户长大后面临「积木→代码」的断崖；ese 的中文文本语法是这条断崖上天然的过渡桥梁。</li>
+        <li><span class="plus">+</span> Scratch 不能文本化、不能进 Git、不能代码评审；ese 全可以。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> Scratch 有 Scratch 官方社区（过亿注册用户）、课程体系、教师生态；ese 的教育推广要从零开始。</li>
+        <li><span class="minus">−</span> Scratch 对「不会打字/低龄儿童」更友好；ese 的最低门槛是「会打中文」。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="lang-head"><h3>vs Python</h3><span class="tag t-info">「简洁通用」路线的对照</span></div>
+  <div class="cols">
+    <div>
+      <h3 style="margin-top:0;">ese 的优势</h3>
+      <ul>
+        <li><span class="plus">+</span> Python 简洁但仍需学英文关键字+编程概念；ese 面向「第一次碰编程」的人群更友好。</li>
+        <li><span class="plus">+</span> Python 做 UI（tkinter/PyQt）体验差；ese 生来就是 UI 语言。</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">ese 的劣势</h3>
+      <ul>
+        <li><span class="minus">−</span> Python 是通用语言：数据分析、AI、脚本、后端全拿捏；ese 是领域语言，天花板天然不同。</li>
+        <li><span class="minus">−</span> Python 的教训值得抄：<strong>「一种明显正确的写法」</strong>（There should be one obvious way）和<strong>可读性至上</strong>——ese 的换行即结束、符号冻结正是同一路线。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h2>四、竞争格局总结</h2>
+<div class="card">
+<table>
+  <tr><th>赛道</th><th>在位者</th><th>ese 的机会</th><th>ese 的胜率判断</th></tr>
+  <tr><td>专业 Web 开发</td><td>React/Vue/Svelte</td><td>无——表达力与生态差距是数量级的</td><td><span class="tag t-bad">不打</span></td></tr>
+  <tr><td>低代码/无代码平台</td><td>各类商业闭源产品</td><td>ese 是<strong>开源文本格式</strong>：可版本管理、可迁移、不被平台锁定</td><td><span class="tag t-good">真正的差异化战场</span></td></tr>
+  <tr><td>编程教育（青少年）</td><td>Scratch、Python</td><td>「积木→真网页」的过渡桥梁，学的即所得</td><td><span class="tag t-good">最有把握的切入点</span></td></tr>
+  <tr><td>中文用户初次建站</td><td>建站 SaaS（闭源模板）</td><td>中文语法 + 开源免费 + 可定制</td><td><span class="tag t-warn">有机会但需产品化</span></td></tr>
+</table>
+</div>
+
+<h2>五、给 ese 的三条定位建议</h2>
+<div class="card">
+  <ol>
+    <li><strong>不要自称「取代 HTML/JS 的编程语言」</strong>——每一次和成熟语言的正面比较都会输。定位改为：<strong>「中文可视化网页构建语言」</strong>，对标对象是低代码平台和 Scratch，而不是 React。</li>
+    <li><strong>可视化编辑器是终极护城河。</strong>语法设计的一切取舍（块状、对称、符号恒定）都在为「拖拽节点 ↔ 文本代码」双向同步铺路。谁先做出 QML Design Studio 级别的双向工具，谁就赢下这条赛道——文本语法只是这个工具的持久化格式。</li>
+    <li><strong>第一产品形态建议是「教学网站生成器」</strong>：中文语法 + 实时预览 + 一键部署，切入编程教育与个人主页场景。用最窄的场景建立第一批用户，再向低代码平台方向生长。</li>
+  </ol>
+</div>
+
+<footer>
+  ese 语言对比报告 · 生成于 2026-09-30 · 依据《ese语言规范-v2.1.md》 · 配套文档：《ese语言评估报告-v2.1.html》
+</footer>
+
+</div>
+</body>
+</html>

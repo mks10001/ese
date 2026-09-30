@@ -1,0 +1,31 @@
+# ---- WorkBuddy 项目数据（工具本地状态，不进入仓库）----
+.workbuddy/
+
+# ---- 编辑器 ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ---- 操作系统 ----
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# ---- Node / 工具链构建产物 ----
+node_modules/
+dist/
+out/
+build/
+*.tsbuildinfo
+
+# ---- 日志与临时文件 ----
+*.log
+npm-debug.log*
+yarn-error.log*
+*.tmp
+*.bak

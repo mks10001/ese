@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ese 语言缺陷评估报告 · 规范 v2.8</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --ink: #1c1f23;
+    --ink-2: #4a5158;
+    --ink-3: #7b838c;
+    --line: #e3e6ea;
+    --p0: #c0392b;
+    --p0-bg: #fdf0ee;
+    --p1: #b7791f;
+    --p1-bg: #fdf7e8;
+    --p2: #2c6e8f;
+    --p2-bg: #eef5f9;
+    --ok: #1e7a52;
+    --ok-bg: #edf7f1;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 20px 72px;
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.75; font-size: 15px;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  header { margin-bottom: 36px; }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--ink-3); text-transform: uppercase; }
+  h1 { font-size: 30px; line-height: 1.35; margin: 10px 0 12px; font-weight: 600; letter-spacing: -.01em; }
+  .sub { color: var(--ink-2); font-size: 15px; max-width: 800px; }
+  .meta { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 12px; padding: 4px 11px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line); color: var(--ink-2);
+  }
+  section { margin: 40px 0; }
+  h2 { font-size: 19px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.005em; }
+  h2 .num { color: var(--ink-3); font-weight: 500; margin-right: 8px; }
+  .lead { color: var(--ink-2); margin: 0 0 18px; font-size: 14.5px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 22px 24px; margin: 14px 0;
+  }
+  .verdict { border-left: 4px solid var(--p0); }
+  .verdict p { margin: 0 0 12px; }
+  .verdict p:last-child { margin-bottom: 0; }
+  strong { font-weight: 600; }
+  code, .mono { font-family: var(--mono); font-size: 13px; background: #f1f3f5; padding: 1px 5px; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 4px; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12.5px; color: var(--ink-3); font-weight: 600; background: #fafbfc; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  .bar { height: 7px; border-radius: 4px; background: #eceff2; overflow: hidden; min-width: 90px; }
+  .bar > i { display: block; height: 100%; border-radius: 4px; }
+  .b-hi { background: #2f9e6b; }
+  .b-mid { background: #d9a12b; }
+  .b-lo { background: #cd5b4c; }
+  .badge { font-size: 11.5px; padding: 2px 8px; border-radius: 5px; font-weight: 600; white-space: nowrap; }
+  .badge.p0 { color: var(--p0); background: var(--p0-bg); }
+  .badge.p1 { color: var(--p1); background: var(--p1-bg); }
+  .badge.p2 { color: var(--p2); background: var(--p2-bg); }
+  .badge.fixed { color: var(--ok); background: var(--ok-bg); }
+  .badge.open { color: var(--ink-3); background: #f1f3f5; }
+  .defect { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 12px 0; background: var(--card); }
+  .defect h3 { font-size: 15px; margin: 0 0 10px; font-weight: 600; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .defect dl { margin: 0; display: grid; grid-template-columns: 76px 1fr; gap: 4px 14px; font-size: 14px; }
+  .defect dt { color: var(--ink-3); font-size: 13px; }
+  .defect dd { margin: 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .matrix { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .quad { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; background: var(--card); }
+  .quad h4 { margin: 0 0 10px; font-size: 13.5px; font-weight: 600; }
+  .quad ul { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--ink-2); }
+  .quad li { margin: 4px 0; }
+  .q-hot { border-top: 3px solid var(--p0); }
+  .q-do { border-top: 3px solid var(--p1); }
+  .q-soon { border-top: 3px solid var(--p2); }
+  .q-hold { border-top: 3px solid var(--ink-3); }
+  ol.steps { padding-left: 22px; margin: 12px 0 0; }
+  ol.steps li { margin: 9px 0; }
+  .foot { margin-top: 46px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; }
+  pre { background: #f7f9fa; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; margin: 12px 0; }
+  @media (max-width: 760px) {
+    .grid2, .matrix { grid-template-columns: 1fr; }
+    .defect dl { grid-template-columns: 1fr; }
+    .defect dt { margin-top: 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Design Review · 缺陷评估</div>
+  <h1>ese 语言缺陷评估报告</h1>
+  <p class="sub">评估对象：《ese语言规范-完整版》v2.8（含 v1.0 → v2.8 全部规则）。评估方法：逐节走查规范文本，按「术语定义完整性 / 规则可判定性 / 实现可行性 / 生态系统影响」四把尺子筛选可证缺陷，并按影响面与修复成本分级。</p>
+  <div class="meta">
+    <span class="chip">规范版本 v2.8</span>
+    <span class="chip">符号表 17 对</span>
+    <span class="chip">实现代码 0 行</span>
+    <span class="chip">评估日期 2026-09-30</span>
+  </div>
+</header>
+
+<section>
+  <div class="card verdict">
+    <p><strong>总体判断：语言设计已接近收敛，工程实现完全缺席。</strong>七轮修订（v2.0 → v2.8）把审美、语法、语义、国际化、词法歧义逐层清完，词法层面已经没有已知的同形构造；但这一版仍然<strong>不可运行</strong>——没有解析器、没有检查器、没有迁移工具。</p>
+    <p>本轮走查发现 <strong>11 项可证缺陷</strong>：5 项 P0（会直接导致真实页面不可用）、6 项 P1（会显著推高使用成本）。其中 <strong>10 项已在 v2.9 增量规范中落地解决方案</strong>，1 项（实现验证）只能靠写代码解决。</p>
+    <p>最关键的结论是：<strong>纸面迭代的边际收益已经归零。</strong>v2.9 之后若继续做纯文档升级，每增加一节规范，未验证假设的存量只会更大。</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">01</span>评分卡</h2>
+  <p class="lead">十维度十分制，合计 100 分。本轮把框架从七维度扩到十维度（新增类型契约、工程治理、可访问性三维），因此<strong>总分与 v2.3 的 62/70 不可直接比较</strong>；可比维度已在「校准」列注明变化。</p>
+  <table>
+    <thead>
+      <tr><th>维度</th><th class="num">得分</th><th>水平</th><th>主要依据</th><th>校准</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>视觉与词法一致性</td><td class="num">10</td>
+        <td><div class="bar"><i class="b-hi" style="width:100%"></i></div></td>
+        <td>对称括号 + 空格定界，四类形态（按钮／列表／括号／点语法）两两不同源</td>
+        <td>9 → 10</td>
+      </tr>
+      <tr>
+        <td>易上手性</td><td class="num">7</td>
+        <td><div class="bar"><i class="b-mid" style="width:70%"></i></div></td>
+        <td>按钮定界符三版内改了三次，文档必须解释三套历史写法</td>
+        <td>8 → 7</td>
+      </tr>
+      <tr>
+        <td>表达能力</td><td class="num">7</td>
+        <td><div class="bar"><i class="b-mid" style="width:70%"></i></div></td>
+        <td>列表／字典／遍历／路由齐备；缺派生值与事件参数</td>
+        <td>6 → 7</td>
+      </tr>
+      <tr>
+        <td>组件与复用</td><td class="num">6</td>
+        <td><div class="bar"><i class="b-mid" style="width:60%"></i></div></td>
+        <td>组件 + 插槽 + ese-ui 已有；命名空间与包管理缺失</td>
+        <td>6 → 6</td>
+      </tr>
+      <tr>
+        <td>数据与状态</td><td class="num">5</td>
+        <td><div class="bar"><i class="b-mid" style="width:50%"></i></div></td>
+        <td>三级状态 + 赋值即刷新；无派生值、无重渲染身份、全量刷新</td>
+        <td>6 → 5（重校准）</td>
+      </tr>
+      <tr>
+        <td>错误处理与健壮性</td><td class="num">4</td>
+        <td><div class="bar"><i class="b-lo" style="width:40%"></i></div></td>
+        <td>严格级错误即终止，无边界：一个字段缺失即整页白屏</td>
+        <td>5 → 4（重校准）</td>
+      </tr>
+      <tr>
+        <td>工具链与生态</td><td class="num">3</td>
+        <td><div class="bar"><i class="b-lo" style="width:30%"></i></div></td>
+        <td>路线写了六步，一行未实现；无诊断码、无迁移工具</td>
+        <td>2 → 3</td>
+      </tr>
+      <tr>
+        <td>类型安全与契约</td><td class="num">2</td>
+        <td><div class="bar"><i class="b-lo" style="width:20%"></i></div></td>
+        <td>属性无类型、拼写错误静默兜底；接口即文档</td>
+        <td>本轮新增维度</td>
+      </tr>
+      <tr>
+        <td>工程治理与迁移</td><td class="num">2</td>
+        <td><div class="bar"><i class="b-lo" style="width:20%"></i></div></td>
+        <td>三次破坏性修订无自动迁移；无清单文件、无 RFC 流程</td>
+        <td>本轮新增维度</td>
+      </tr>
+      <tr>
+        <td>可访问性与合规</td><td class="num">2</td>
+        <td><div class="bar"><i class="b-lo" style="width:20%"></i></div></td>
+        <td>媒体块无替代文本、输入框无标签关联</td>
+        <td>本轮新增维度</td>
+      </tr>
+      <tr>
+        <td><strong>合计</strong></td><td class="num"><strong>48</strong></td>
+        <td><div class="bar"><i class="b-mid" style="width:48%"></i></div></td>
+        <td colspan="2">语言层扎实，工程层空白——典型「设计已完成、产品未开始」形态</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">02</span>P0 缺陷（会导致真实页面不可用）</h2>
+  <p class="lead">五项的共性：它们都不是「语言不够优雅」，而是「按现有规范写出来的网站会在真实场景里坏掉」。</p>
+
+  <div class="defect">
+    <h3><span class="badge p0">P0-1</span>类型契约缺失，拼写错误被静默吞掉 <span class="badge fixed">v2.9 已解决</span></h3>
+    <dl>
+      <dt>现象</dt><dd>组件属性只有名字和默认值，无类型。调用处写 <code>[&lt; 欢迎卡 名子="张三" &gt;]</code>，规范规定「忽略未知属性」，于是组件拿到的是默认值 <code>"游客"</code>，页面正常渲染、无任何提示。</dd>
+      <dt>根因</dt><dd>v2.2 把「属性缺省兜底」定为宽容策略，但没给「显式收紧」留出口——宽容成了唯一行为。</dd>
+      <dt>后果</dt><dd>最典型的低代码故障：界面不报错但数据不对，排查成本极高。类型标注同时是组件的事实文档。</dd>
+      <dt>建议</dt><dd>属性支持类型标注（文字／数字／是否／名单／字典）与 <code>必须</code> 修饰；ese check 对「未知属性名」「类型不符」「缺必填」分别报错或警告。宽容仍是默认，严格按属性逐项打开。</dd>
+    </dl>
+  </div>
+
+  <div class="defect">
+    <h3><span class="badge p0">P0-2</span>无错误边界：一处错误 = 整页白屏 <span class="badge fixed">v2.9 已解决</span></h3>
+    <dl>
+      <dt>现象</dt><dd>严格级错误的处理是「立即终止」。若页面里 <code>{用户.名字}</code> 的 <code>用户</code> 缺一个键，整页渲染中断——首屏白屏。</dd>
+      <dt>根因</dt><dd>v2.2 把「计算错误即停」当作简洁性的代价，但没有配套的<strong>局部降级</strong>机制。</dd>
+      <dt>后果</dt><dd>对一个「中文低门槛、面向初次建站者」的语言来说，这是致命体验问题：用户看到白屏却不知道从哪一行改。</dd>
+      <dt>建议</dt><dd>不引入 try/catch 语法，改为<strong>容器属性式错误边界</strong>：<code>[+ 容错 兜底="数据加载失败" … +]</code>，把降级范围交给用户显式声明，粒度可细到单个组件；同时补安全取值 <code>取(字典, 键, 缺省)</code>。错误仍写日志，不静默。</dd>
+    </dl>
+  </div>
+
+  <div class="defect">
+    <h3><span class="badge p0">P0-3</span>事件绑定不能传参，列表交互写不出来 <span class="badge fixed">v2.9 已解决</span></h3>
+    <dl>
+      <dt>现象</dt><dd>绑定只有 <code>调用 名字</code>，执行块也不能声明形参。于是「删除第 3 行」「加购这件商品」这类最常见的列表操作无法表达——执行块不知道是哪一项触发了它。</dd>
+      <dt>根因</dt><dd>v2.1 定「命名触发器」方案时只解决了「按钮 → 逻辑」的绑定，没有解决「哪一条数据」。</dd>
+      <dt>后果</dt><dd>商品列表、待办清单、购物车这三类教学与商业场景全部落空，而它们恰好是低代码赛道的主战场。</dd>
+      <dt>建议</dt><dd>执行块支持形参 <code>[&gt; 加购(编号) : … &gt;]</code>，绑定处传参 <code>调用 加购({项.id})</code>；并提供事件对象 <code>事件.值 / 事件.索引 / 事件.项 / 事件.目标</code>。</dd>
+    </dl>
+  </div>
+
+  <div class="defect">
+    <h3><span class="badge p0">P0-4</span>遍历无键，重渲染丢输入焦点 <span class="badge fixed">v2.9 已解决</span></h3>
+    <dl>
+      <dt>现象</dt><dd><code>[~ 遍历 … ~]</code> 没有身份标识。在循环里放输入框（如「批量填价格」），任一状态变更触发重渲染后，正在输入的光标会跳走、已输入内容可能错位。</dd>
+      <dt>根因</dt><dd>数据变更采用「引用即全量刷新」，没有把「节点身份」这一概念引入语言。</dd>
+      <dt>后果</dt><dd>表单类页面几乎不可用；这是所有声明式框架都踩过、并在早期就修掉的坑。</dd>
+      <dt>建议</dt><dd>遍历增加 <code>键={项.id}</code>（key）；无键时保持 v2.8 行为（按序号重渲染），有键时按身份复用节点。ese check 对「循环内含输入框却无键」给警告。</dd>
+    </dl>
+  </div>
+
+  <div class="defect">
+    <h3><span class="badge p0">P0-5</span>没有诊断规范，工具链无法开工 <span class="badge fixed">v2.9 已解决</span></h3>
+    <dl>
+      <dt>现象</dt><dd>规范只给了错误文本的示例，没有错误码、没有诊断数据结构、没有消息来源约定。于是解析器、ese check、编辑器插件、文档四方各自发明一套错误信息。</dd>
+      <dt>根因</dt><dd>前七轮修订全部聚焦「语言能不能表达」，未定义「工具怎么说话」。</dd>
+      <dt>后果</dt><dd>这是工具链路线的隐性阻塞点：错误码不定，ese check 的验收标准「错配能报准确行号」就无法被机器校验；双语项目还会出现中英错误消息手工维护两份的长期负担。</dd>
+      <dt>建议</dt><dd>以 <code>ESE1xxx</code>（词法／语法）、<code>ESE2xxx</code>（静态检查）、<code>ESE3xxx</code>（运行时）、<code>ESE4xxx</code>（构建工具）分段；统一诊断对象（code／severity／file／line／column／message／hint）；消息模板进 <code>diagnostics.json</code> 单一数据源，报错语言跟随文件模式。</dd>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span>P1 缺陷（显著推高使用成本）</h2>
+  <table>
+    <thead>
+      <tr><th style="width:26%">缺陷</th><th>说明</th><th style="width:14%">处置</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>无派生值（computed）</td>
+        <td>「总价 = 单价 × 数量」只能写成手动的赋值语句并自己保证调用时机，极易漏更新；大页面会把状态同步写成一团。</td>
+        <td><span class="badge fixed">v2.9 已解决</span></td>
+      </tr>
+      <tr>
+        <td>模块无命名空间、无清单文件</td>
+        <td>引入只按名字，两个模块定义同名组件时无解；也没有包管理入口。<code>ese.json</code> 缺失使「构建单元的根」无法被工具确定。</td>
+        <td><span class="badge fixed">v2.9 部分解决</span></td>
+      </tr>
+      <tr>
+        <td>样式表达力不足</td>
+        <td>属性只有宽／居中／背景／间距。真实设计（圆角、字号层级、间距节奏）做不出来，语言的「画得出真网站」承诺会打折。</td>
+        <td><span class="badge fixed">v2.9 已解决</span></td>
+      </tr>
+      <tr>
+        <td>可访问性缺位</td>
+        <td>媒体块无替代文本、输入框无标签关联。既是合规风险，也让生成的页面在无障碍环境下不可读——对学生用户还是教学事故。</td>
+        <td><span class="badge fixed">v2.9 已解决</span></td>
+      </tr>
+      <tr>
+        <td>无法生成 API 文档</td>
+        <td>组件与属性只能靠人读源码。组件库一上规模，文档就与实现脱节——这是 Pug 类工具退化成「少数人玩具」的前兆。</td>
+        <td><span class="badge fixed">v2.9 已解决</span></td>
+      </tr>
+      <tr>
+        <td>破坏性修订无迁移工具</td>
+        <td>按钮定界符在 v2.5 / v2.6 / v2.7 / v2.8 四版内改了四次，每次都是「用户自己改代码」。这是规范史上最大的工程债。</td>
+        <td><span class="badge fixed">v2.9 已解决</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">04</span>P2 缺陷（本轮未处置，需后续跟进）</h2>
+  <table>
+    <thead>
+      <tr><th style="width:26%">缺陷</th><th>说明</th><th style="width:18%">建议时机</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>语言从未被实现验证 ★</td>
+        <td>v2.0 → v2.9 九轮修订产出约十份文档、零行可运行代码。所有「语法可行性」「性能」「易用性」判断均为纸面推断，未经任何反例检验。</td>
+        <td>立即（最高优先级）</td>
+      </tr>
+      <tr>
+        <td>性能模型未定义</td>
+        <td>「赋值即刷新」是全量重渲染还是有 diff？没有批量更新、没有脏标记约定。页面规模一大，行为不可预期。</td>
+        <td>解释器 v0.2 同期</td>
+      </tr>
+      <tr>
+        <td>无源映射（sourcemap）</td>
+        <td>产物是 HTML + JS，运行时错误行号指向产物而非 <code>.bd</code>。没有源映射，报错体验会断裂。</td>
+        <td>解释器 v0.1 同期</td>
+      </tr>
+      <tr>
+        <td>SSR 水合细节留白</td>
+        <td>运行时选型、产物形态、状态序列化、水合粒度均未定。编译模型章节只有原则，没有可实现的契约。</td>
+        <td>解释器 v0.2</td>
+      </tr>
+      <tr>
+        <td>测试表达力偏薄</td>
+        <td>只有「名称 + 表达式断言」，没有渲染结构断言、快照测试、组件行为测试。组件库无法被回归保护。</td>
+        <td>v2.10（实现倒逼）</td>
+      </tr>
+      <tr>
+        <td>治理流程停留在文档</td>
+        <td>RFC 冻结流程、单一数据源、弃用周期目前只是本文档里的几段话；仓库尚不存在，无从执行。</td>
+        <td>开源发布同期</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">05</span>历史包袱：四次破坏性修订的复盘</h2>
+  <p class="lead">按钮定界符的演变是这份规范最有价值的教训样本——它展示了一个「局部最优解」是如何被连续追求到第四次的。</p>
+  <table>
+    <thead>
+      <tr><th>版本</th><th>形态</th><th>当时的理由</th><th>遗留问题</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>v2.0 – v2.4</td><td><code>[( 文字 )]</code></td><td>与草案一致的圆括号直觉</td><td>与「单元素列表含括号表达式」同形</td></tr>
+      <tr><td>v2.5</td><td><code>[( 文字 )]</code> + 位置裁决</td><td>靠语句／值位置互斥消歧，零成本</td><td>按钮文字不能含半角 <code>)</code>；同形仍在</td></tr>
+      <tr><td>v2.6</td><td><code>[(( 文字 ))]</code></td><td>双圆括号避开常用同形</td><td>极端同形 <code>[((x))]</code> 只是被推深一层</td></tr>
+      <tr><td>v2.7</td><td><code>[c.文字.c]</code></td><td>换字母加点号，与列表「完全不同源」</td><td>与点语法 <code>c.a.c</code> 在极端构造下同形</td></tr>
+      <tr><td>v2.8</td><td><code>[c. 文字 .c]</code></td><td>空格升格为语法成份，同形彻底消灭</td><td>代价：点语法必须紧贴，值位置不能写松散点语法</td></tr>
+    </tbody>
+  </table>
+  <div class="card">
+    <p style="margin-top:0"><strong>三点结论</strong></p>
+    <ol class="steps">
+      <li><strong>前三次修的是症状，第四次修的是根因。</strong>v2.5 到 v2.7 都在「把冲突推深一层」，只有 v2.8 换掉了「同源」这个前提。识别「这是同一类冲突的第几次复现」比每次单独找解更重要。</li>
+      <li><strong>每次破坏都必须付迁移成本。</strong>四次改型累加到用户侧就是四轮手工改动；<code>ese fmt --migrate</code> 不是锦上添花，而是这笔债的最低还款额。</li>
+      <li><strong>冻结流程要早于第一次破坏。</strong>v2.9 把「破坏性变更必须附迁移工具 + 走 RFC」写进规范，属于事后补课——但比不补好。</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span>优先级矩阵</h2>
+  <div class="matrix">
+    <div class="quad q-hot">
+      <h4>高影响 · 低成本 → 立刻做</h4>
+      <ul>
+        <li>诊断规范与错误码（P0-5）</li>
+        <li>安全取值 <code>取</code> / <code>取或</code>（P0-2 的一半）</li>
+        <li>可访问性属性（P1）</li>
+        <li><code>ese fmt --migrate</code>（P1，纯文本改写）</li>
+      </ul>
+    </div>
+    <div class="quad q-do">
+      <h4>高影响 · 高成本 → 排进里程碑</h4>
+      <ul>
+        <li>属性契约与静态校验（P0-1）</li>
+        <li>容错容器与边界语义（P0-2）</li>
+        <li>事件传参与事件对象（P0-3）</li>
+        <li>遍历键与重渲染策略（P0-4）</li>
+      </ul>
+    </div>
+    <div class="quad q-soon">
+      <h4>低影响 · 低成本 → 顺手做</h4>
+      <ul>
+        <li><code>ese.json</code> 清单</li>
+        <li>文档注释与 <code>ese doc</code></li>
+        <li>模块命名空间</li>
+        <li>样式白名单</li>
+      </ul>
+    </div>
+    <div class="quad q-hold">
+      <h4>低影响 · 高成本 → 推迟到实现反馈</h4>
+      <ul>
+        <li>SSR 水合细节与运行时选型</li>
+        <li>性能模型（diff 与批量更新）</li>
+        <li>测试表达力扩展</li>
+        <li>完整类型系统（结构体／泛型）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span>行动建议（按执行顺序）</h2>
+  <ol class="steps">
+    <li><strong>停止纸面升级。</strong>v2.9 之后的下一次规范修订，应当由解释器第一行代码或第一个解析失败案例倒逼产生，而非再由评估报告驱动。九轮文档迭代已经把「能想到的问题」基本想完。</li>
+    <li><strong>先做 <code>ese fmt --migrate</code> 与 ese check，再写解释器。</strong>迁移工具是纯文本改写，工作量最小但消灭历史债；检查器能立刻验证文法是否真的可判定——它是最便宜的「文法正确性测试」。</li>
+    <li><strong><code>keywords.json</code> 与 <code>diagnostics.json</code> 必须先落地。</strong>这两个文件是解析器、检查器、文档、编辑器插件的共同上游。先有数据源，工具才不会各写一套。</li>
+    <li><strong>VSCode 插件与检查器同期发布。</strong>它同时解决两个问题：中文标点输入的痛点，以及「写完不知道对不对」的反馈真空。</li>
+    <li><strong>把「可运行的最小站点」定为 v3.0 的门槛。</strong>不是「规范更完整」，而是「<code>ese build</code> 能生成一个能点、能跳转、能保存数据的页面」。语言的价值只有在第一次跑通时才能被证伪或证实。</li>
+    <li><strong>开源前先定治理。</strong>符号冻结、RFC 流程、弃用周期三项写进 README，否则社区的第一个提案就会撞上「符号表能不能加」这个未定义问题。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">08</span>结论</h2>
+  <div class="card">
+    <p style="margin-top:0">ese 在语言设计维度已经完成了它的工作：符号体系自洽且经过四轮歧义攻击而站住，语义层覆盖了建站所需的绝大多数场景，v2.9 又把契约、边界与诊断三块补上。剩下的全部问题都归到一个根因——<strong>它还没有跑起来过一次</strong>。</p>
+    <p style="margin-bottom:0">因此本报告的最终建议只有一句：<strong>把下一版的力气全部投到实现上，用能跑通的最小站点来验收设计。</strong>设计已经足够好到值得被实现，但也已经好到无法再从纸面上继续改进。</p>
+  </div>
+</section>
+
+<div class="foot">
+  ese 语言缺陷评估报告 · 评估对象规范 v2.8 · 已落地方案见《ese语言规范-v2.9.md》与《ese语言规范-完整版.md》<br>
+  本报告中的评分与优先级为评估判断，非规范条文；规范条文以完整版为准。
+</div>
+
+</div>
+</body>
+</html>

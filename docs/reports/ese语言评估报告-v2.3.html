@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ese 语言 v2.3 设计评估报告</title>
+<style>
+  :root{
+    --ink:#1a1d23; --sub:#5a6270; --line:#e4e7ec; --bg:#f7f8fa; --card:#ffffff;
+    --accent:#4f5be8; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --good-bg:#ecfdf5; --warn-bg:#fffbeb; --bad-bg:#fef2f2; --accent-bg:#eef0fe;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px;}
+  header h1{font-size:28px;letter-spacing:1px;}
+  header .meta{color:var(--sub);font-size:13px;margin-top:8px;}
+  h2{font-size:20px;margin:40px 0 16px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:20px 0 8px;}
+  p{margin:8px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:14px 0;}
+  .verdict{background:linear-gradient(135deg,#eef0fe,#fdfdff);border:1px solid #d6daff;}
+  .verdict strong{color:var(--accent);}
+  .score-row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .score-label{width:170px;font-size:14px;flex-shrink:0;}
+  .score-label small{color:var(--sub);font-weight:400;}
+  .score-bar{flex:1;height:14px;background:#edf0f4;border-radius:7px;overflow:hidden;position:relative;}
+  .score-fill{height:100%;border-radius:7px;}
+  .score-ghost{position:absolute;top:0;height:100%;background:repeating-linear-gradient(45deg,rgba(0,0,0,.06),rgba(0,0,0,.06) 4px,transparent 4px,transparent 8px);}
+  .score-num{width:110px;text-align:right;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;flex-shrink:0;}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;margin-right:6px;vertical-align:middle;}
+  .t-good{background:var(--good-bg);color:var(--good);}
+  .t-warn{background:var(--warn-bg);color:var(--warn);}
+  .t-bad{background:var(--bad-bg);color:var(--bad);}
+  .t-info{background:var(--accent-bg);color:var(--accent);}
+  code{font-family:Consolas,"Courier New",monospace;background:#f0f2f5;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:13.5px;color:#c7254e;}
+  pre{background:#272b33;color:#e8eaf0;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:10px 0;font-family:Consolas,monospace;}
+  pre code{background:none;border:none;color:inherit;padding:0;}
+  ul,ol{padding-left:22px;margin:8px 0;}
+  li{margin:6px 0;}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;background:var(--card);}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#f0f2f6;font-weight:600;}
+  .p0{border-left:4px solid var(--bad);}
+  .p1{border-left:4px solid var(--warn);}
+  .p2{border-left:4px solid var(--accent);}
+  .issue-head{font-weight:600;margin-bottom:4px;}
+  footer{margin-top:60px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ese 语言 v2.3 设计评估报告</h1>
+  <div class="meta">评估对象：《ese语言规范-v2.3.md》（增量） · 评估日期：2026-09-30 · 性质：第四次评估</div>
+</header>
+
+<h2>一、总体结论</h2>
+<div class="card verdict">
+  <p><strong>一句话结论：</strong>v2.3 用一份短小的增量规范解决了两件悬而未决的事：<strong>运算符优先级</strong>（旧账，P1 级）与<strong>双语模式</strong>（战略级新能力）。优先级部分是教科书式的标准答案，无可挑剔且顺手补上了此前缺失的<strong>逻辑运算符</strong>（这是 v2.0 以来潜伏最久的语义缺口——此前 <code>[? ?]</code> 里根本无法写复合条件）。双语模式的设计大部分正确（括号不随语言变、标识符跨语言、按文件声明），但 <code>[ee]/[zz]</code> 与「符号冻结」承诺存在<strong>字面上的张力</strong>，且双语机制带来<strong>文档、测试、报错信息三重成本</strong>。总分 <strong>58/70 → 62/70</strong>。结论不变：评估已非瓶颈，实现才是。</p>
+</div>
+
+<h2>二、旧账核查</h2>
+<div class="card">
+<table>
+  <tr><th>遗留问题</th><th>来源</th><th>v2.3 处理</th><th>状态</th></tr>
+  <tr><td>运算符优先级未定义</td><td>v2.1 评估起持续挂账</td><td>完整优先级/结合性表，标准数学序，左结合明确</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>内置函数清单未正式化</td><td>v2.1 评估起持续挂账</td><td>2.3 节统一收录 11 个内置函数，中英对照</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>复合条件无法表达</td><td>（本次新发现补记账）v2.0 起 <code>[? ?]</code> 只能写单比较</td><td>新增 并且/或者/非（and/or/not）与 是/否（true/false）字面量，纳入优先级表</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>异步预留声明缺失</td><td>v2.1 评估</td><td>仍未声明</td><td><span class="tag t-info">未解决（可延后）</span></td></tr>
+</table>
+<p style="color:var(--sub);font-size:13px;">连续四版挂账的两笔旧账（优先级、内置清单）本版全部清零——规范阶段的公开问题至此<strong>全部关闭</strong>。</p>
+</div>
+
+<h2>三、评分卡（对比 v2.2）</h2>
+<div class="card">
+  <div class="score-row"><div class="score-label">易上手性 <small>8→9</small></div><div class="score-bar"><div class="score-fill" style="width:90%;background:var(--good);"></div><div class="score-ghost" style="left:80%;width:10%;"></div></div><div class="score-num">9 / 10 ↑1</div></div>
+  <div class="score-row"><div class="score-label">视觉一致性 <small>9→9</small></div><div class="score-bar"><div class="score-fill" style="width:90%;background:var(--good);"></div></div><div class="score-num">9 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">语法简洁度 <small>7→7</small></div><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--good);"></div></div><div class="score-num">7 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">表达能力 <small>7→8</small></div><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--good);"></div><div class="score-ghost" style="left:70%;width:10%;"></div></div><div class="score-num">8 / 10 ↑1</div></div>
+  <div class="score-row"><div class="score-label">扩展性 <small>8→8</small></div><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--good);"></div></div><div class="score-num">8 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">输入效率 <small>5→6</small></div><div class="score-bar"><div class="score-fill" style="width:60%;background:var(--warn);"></div><div class="score-ghost" style="left:50%;width:10%;"></div></div><div class="score-num">6 / 10 ↑1</div></div>
+  <div class="score-row"><div class="score-label">工具链生态 <small>3→3</small></div><div class="score-bar"><div class="score-fill" style="width:30%;background:var(--bad);"></div></div><div class="score-num">3 / 10 持平</div></div>
+  <p style="color:var(--sub);font-size:13px;margin-top:14px;">易上手性 +1：双语模式把受众从中文用户扩展到英文用户，且逻辑运算符让条件判断终于「完整」；输入效率 +1：英文模式下完全绕开中文输入法标点切换。工具链仍是最短板——连续三版持平，只能靠动手兑现。</p>
+</div>
+
+<h2>四、v2.3 设计评估</h2>
+
+<div class="card">
+  <h3 style="margin-top:0;"><span class="tag t-good">优</span>做得好的设计</h3>
+  <ul>
+    <li><strong>逻辑运算符是本版最有价值的实质增量。</strong>从 v2.0 到 v2.2，<code>[? ?]</code> 只能写单个比较——这是潜伏三版的语义缺口，本次借优先级表一并补齐，并且 一并纳入了布尔字面量（是/否），让 <code>断言</code> 和 <code>包含</code> 的返回值有了归宿。</li>
+    <li><strong>优先级选择标准答案而非发明。</strong>五档优先级、左结合、括号最高——与 C/Python/JS 直觉一致。「1 + 2 * 3 = 7」的破坏性修订写得很诚实（明确标注 v2.2 行为是 9）。类型规则「无隐式转换 + 转数字/转文字」同样是从 Python/JS 血泪史里直接抄的正确答案。</li>
+    <li><strong>「括号不随语言变」是双语设计的定海神针。</strong>模式只切换词、不切换框，意味着解析器只需一张关键字对照表，文法结构零改动；组件名跨语言（<code>引入</code> 中文文件调用英文组件）让双语生态可以互通而不是分裂成两个社区。</li>
+    <li><strong>把 <code>[ee]/[zz]</code> 定位为编译指令（pragma）。</strong>不进符号表、不可嵌套、独占一行——这个自我解释在字面上守住了 17 对冻结承诺（详见问题 1 的张力讨论）。</li>
+  </ul>
+</div>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 1：双语模式的三重长期成本被低估</div>
+  <p>双语不是「加一张对照表」，而是<strong>所有下游产物翻倍</strong>：① 文档——每条规则都要写两遍示例；② 测试——每个测试用例理论上需要中英双份跑（否则英文模式只是「理论上可用」）；③ 报错信息——错误提示用哪种语言？建议实现前定案三条：<strong>① 错误信息语言跟随文件模式</strong>（[ee] 文件报英文错）；② <strong>ese test 默认跑双模式回归</strong>（同一用例中英各跑一遍，保证对照表永不错位）；③ <strong>文档以中文为准、英文表自动生成</strong>（关键字对照表由脚本从单一数据源生成，禁止手写两份）。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 2：与「符号冻结」的字面张力</div>
+  <p>「17 对最终符号集，不再新增括号对」的承诺写于 v2.1，而 v2.3 引入了 <code>[ee]</code>、<code>[zz]</code> 两个新的括号结构——虽然定义为 pragma 有其道理（它们不是容器、无内容配对语义），但<strong>字面上就是新的括号字面量</strong>。两条出路任选：① 在冻结声明中补一句「编译指令不占用符号表名额」，把规则说圆；② 改用无括号的行指令（如行首 <code>@@ee</code>）。推荐 ①——<code>[ee]</code> 视觉上与括号体系一致，且实际风险为零，只需补一句话。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 3：优先级修订是静默破坏</div>
+  <p><code>1 + 2 * 3</code> 从 9 变 7 对新用户是修复，对已按 v2.2 写出的（假想）存量代码是静默破坏。规范里标了，但建议 ese check 加一条<strong>专项诊断</strong>：检测到无括号的加减乘混合表达式时提示「v2.3 起按标准优先级计算，请确认」，把破坏从静默变成可见。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 4：关键字对照表需要单一数据源</div>
+  <p>3.2 节的 18 行对照表目前是手写 Markdown。双语模式的一切正确性都押在这张表上——解析器、ese check、文档、测试四处都引用它。任何一处手抄错位（如 <code>goto</code> 写成 <code>go</code>）都是最难查的 bug。实现时必须做成<strong>机器可读的单一数据源</strong>（如 keywords.json），文法、check、文档由它生成。</p>
+</div>
+
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">低</span>问题 5：小尾巴</div>
+  <ul>
+    <li>异步预留声明仍欠一句（连续三版）；</li>
+    <li>比较运算 <code>==</code> 对列表/字典做深度比较已声明，但「深度」的边界（循环引用？）留白——实现期定；</li>
+    <li>英文模式下字符串内插值仍用 <code>{变量}</code> 且变量可为中文名，属合法但建议文档给一句风格提示。</li>
+  </ul>
+</div>
+
+<h2>五、改进建议（v2.3 → v2.4 / 实现期）</h2>
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">P0</span>实现前定案三条（随工具链第一批产出）</div>
+  <ol>
+    <li>错误信息语言跟随文件模式；</li>
+    <li>关键字对照表做成机器可读单一数据源（keywords.json），解析器/check/文档/测试四端由它生成；</li>
+    <li>ese check 双模式回归：同一测试用例中英各跑一遍。</li>
+  </ol>
+</div>
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">P1</span>两句文档就能修的</div>
+  <p>冻结声明补「编译指令不占名额」；ese check 加优先级修订专项诊断；<code>==</code> 深度比较边界一句说明。</p>
+</div>
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">P2</span>一句话旧账</div>
+  <p>异步预留声明（连续第三版提醒——再不写就要在 v3.0 设计时炸出来了）。</p>
+</div>
+
+<h2>六、结论</h2>
+<div class="card">
+  <p>v2.3 清掉了规范阶段最后两笔旧账，并用很小的成本（一张对照表 + 两条规则）换来了真实的战略收益：受众翻倍、英文社区入口、为未来本地化（日语/西语模式可按同一机制扩展）打好地基。逻辑运算符的补齐则是纯赚。</p>
+  <p>四版评估轨迹至此收官：<strong>v2.0 修审美 → v2.1 修语法 → v2.2 修语义 → v2.3 修表达与国际化的边界</strong>。语言层已无挂账，规范与实现之间只剩实现期细节。<strong>强烈建议：不要再出 v2.4 纸面版——下一版规范应该由解释器的第一行代码倒逼产生。</strong></p>
+  <table>
+    <tr><th>下一步（不变）</th><th>内容</th></tr>
+    <tr><td>① VSCode 插件</td><td>TextMate 高亮 + snippets（双语关键字都要进补全表）</td></tr>
+    <tr><td>② ese check</td><td>括号配对、双模式关键字解析、大括号专项诊断、优先级修订提示</td></tr>
+    <tr><td>③ 解释器 v0.1</td><td>前端层 → HTML，期间定案插槽与大括号细节</td></tr>
+    <tr><td>④ 解释器 v0.2</td><td>逻辑层 + 状态响应式 + 组件 + ese test 双模式回归</td></tr>
+  </table>
+</div>
+
+<footer>
+  ese 语言 v2.3 评估报告 · 生成于 2026-09-30 · 依据《ese语言规范-v2.3.md》，对比基准《ese语言评估报告-v2.2.html》
+</footer>
+
+</div>
+</body>
+</html>

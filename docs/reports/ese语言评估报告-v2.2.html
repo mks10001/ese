@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ese 语言 v2.2 设计评估报告</title>
+<style>
+  :root{
+    --ink:#1a1d23; --sub:#5a6270; --line:#e4e7ec; --bg:#f7f8fa; --card:#ffffff;
+    --accent:#4f5be8; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --good-bg:#ecfdf5; --warn-bg:#fffbeb; --bad-bg:#fef2f2; --accent-bg:#eef0fe;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px;}
+  header h1{font-size:28px;letter-spacing:1px;}
+  header .meta{color:var(--sub);font-size:13px;margin-top:8px;}
+  h2{font-size:20px;margin:40px 0 16px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:20px 0 8px;}
+  p{margin:8px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:14px 0;}
+  .verdict{background:linear-gradient(135deg,#eef0fe,#fdfdff);border:1px solid #d6daff;}
+  .verdict strong{color:var(--accent);}
+  .score-row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .score-label{width:160px;font-size:14px;flex-shrink:0;}
+  .score-label small{color:var(--sub);font-weight:400;}
+  .score-bar{flex:1;height:14px;background:#edf0f4;border-radius:7px;overflow:hidden;position:relative;}
+  .score-fill{height:100%;border-radius:7px;}
+  .score-ghost{position:absolute;top:0;height:100%;background:repeating-linear-gradient(45deg,rgba(0,0,0,.06),rgba(0,0,0,.06) 4px,transparent 4px,transparent 8px);}
+  .score-num{width:110px;text-align:right;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;flex-shrink:0;}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;margin-right:6px;vertical-align:middle;}
+  .t-good{background:var(--good-bg);color:var(--good);}
+  .t-warn{background:var(--warn-bg);color:var(--warn);}
+  .t-bad{background:var(--bad-bg);color:var(--bad);}
+  .t-info{background:var(--accent-bg);color:var(--accent);}
+  code{font-family:Consolas,"Courier New",monospace;background:#f0f2f5;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:13.5px;color:#c7254e;}
+  pre{background:#272b33;color:#e8eaf0;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:10px 0;font-family:Consolas,monospace;}
+  pre code{background:none;border:none;color:inherit;padding:0;}
+  ul,ol{padding-left:22px;margin:8px 0;}
+  li{margin:6px 0;}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;background:var(--card);}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#f0f2f6;font-weight:600;}
+  .p0{border-left:4px solid var(--bad);}
+  .p1{border-left:4px solid var(--warn);}
+  .p2{border-left:4px solid var(--accent);}
+  .issue-head{font-weight:600;margin-bottom:4px;}
+  footer{margin-top:60px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ese 语言 v2.2 设计评估报告</h1>
+  <div class="meta">评估对象：《ese语言规范-v2.2.md》 · 评估日期：2026-09-30 · 性质：v2.1 评估后的复查报告（第三次评估）</div>
+</header>
+
+<h2>一、总体结论</h2>
+<div class="card verdict">
+  <p><strong>一句话结论：</strong>v2.2 补齐了 v2.1 评估指出的<strong>全部 3 个高优先级问题</strong>，并一次性搭出路由、状态、组件库、测试、SSR 五大子系统——总分从 <strong>48/70 提升到 58/70</strong>。语言层语义至此<strong>基本齐备</strong>，规范已从「可以开工实现」进入「实现图纸完整」状态。新增子系统整体质量高（尤其状态管理的三级模型和 SSR「编译目标而非语言特性」的克制），但<strong>插槽机制、字典与插值的共用大括号、断言表达力</strong>三处存在值得实现前再推敲的设计细节。结论：评估阶段到此收尾，<strong>立即转入工具链实现</strong>，实现中暴露的细节边写边定。</p>
+</div>
+
+<h2>二、v2.1 遗留问题修复核查</h2>
+<div class="card">
+<table>
+  <tr><th>v2.1 评估问题</th><th>等级</th><th>v2.2 处理方式</th><th>状态</th></tr>
+  <tr><td>数据结构缺位（无列表/字典/遍历）</td><td><span class="tag t-bad">高</span></td><td>第三节：列表/字典字面量、点语法、数据函数表（取第/长度/加入/包含/键列表）、<code>[~ 遍历 … 为 项 ~]</code></td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>三处词法歧义</td><td><span class="tag t-bad">高</span></td><td>第二节：媒体文件名禁 <code>*</code>（遇第二个 <code>*</code> 即闭合）；路径禁前导 <code>/</code>；插值仅限文字块与字符串内</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>运行时错误处理未定义</td><td><span class="tag t-bad">高</span></td><td>第四节：两级策略——属性缺省兜底（宽容）+ 计算错误即停含行号（严格），与 v2.1 评估推荐的组合一致</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>运算符优先级未定义</td><td><span class="tag t-warn">中</span></td><td>未明文写入 v2.2（文法仍为左结合）</td><td><span class="tag t-warn">未解决</span></td></tr>
+  <tr><td>内置函数清单未正式化</td><td><span class="tag t-warn">中</span></td><td>部分解决：数据函数表 + 跳转/断言/渲染 已定义；<code>打印</code>、<code>转数字</code> 等仍未收录</td><td><span class="tag t-warn">部分解决</span></td></tr>
+  <tr><td>组件属性无默认值</td><td><span class="tag t-warn">中</span></td><td><code>属性 名字 = "游客"</code> 默认值语法</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>异步模型留白</td><td><span class="tag t-info">低</span></td><td>仍未声明预留计划</td><td><span class="tag t-info">未解决（可延后）</span></td></tr>
+</table>
+</div>
+
+<h2>三、评分卡（对比 v2.1）</h2>
+<div class="card">
+  <div class="score-row"><div class="score-label">易上手性 <small>8→8</small></div><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--good);"></div></div><div class="score-num">8 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">视觉一致性 <small>9→9</small></div><div class="score-bar"><div class="score-fill" style="width:90%;background:var(--good);"></div></div><div class="score-num">9 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">语法简洁度 <small>7→7</small></div><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--good);"></div></div><div class="score-num">7 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">表达能力 <small>5→7</small></div><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--good);"></div><div class="score-ghost" style="left:50%;width:20%;"></div></div><div class="score-num">7 / 10 ↑2</div></div>
+  <div class="score-row"><div class="score-label">扩展性 <small>7→8</small></div><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--good);"></div><div class="score-ghost" style="left:70%;width:10%;"></div></div><div class="score-num">8 / 10 ↑1</div></div>
+  <div class="score-row"><div class="score-label">输入效率 <small>5→5</small></div><div class="score-bar"><div class="score-fill" style="width:50%;background:var(--warn);"></div></div><div class="score-num">5 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">工具链生态 <small>2→3</small></div><div class="score-bar"><div class="score-fill" style="width:30%;background:var(--bad);"></div><div class="score-ghost" style="left:20%;width:10%;"></div></div><div class="score-num">3 / 10 ↑1</div></div>
+  <p style="color:var(--sub);font-size:13px;margin-top:14px;">表达能力 +2（数据结构、遍历、插槽、路由、状态让「能写出什么」产生质变）；工具链 +1（测试命令与构建模型进入规范）。输入效率依然靠未来的编辑器插件兑现。值得注意：<strong>符号表在新增六大子系统的同时保持 17 对不变</strong>，冻结策略经受了第一次实战检验——这是扩展性 +1 的实质依据。</p>
+</div>
+
+<h2>四、v2.2 各子系统评估</h2>
+
+<div class="card">
+  <h3 style="margin-top:0;"><span class="tag t-good">优</span>做得好的设计</h3>
+  <ul>
+    <li><strong>SSR「编译目标而非语言特性」</strong>——本报告最高评价的一条。大量自创语言死在「为了 SSR 发明新语法」上；ese 的 <code>ese build / ese serve</code> 双目标 + 纯展示页零 JS 的设计，克制且正确。</li>
+    <li><strong>三级状态模型边界清晰</strong>——生命周期、可见范围一张表说尽；「全局状态只允许全局执行块修改、ese check 拒绝跨层赋值」把单向数据流做成了机器强制，比很多成熟框架的事后约定更硬。</li>
+    <li><strong>错误处理两级策略</strong>——「页面能出来（宽容）+ 算错了立刻看见（严格）」精准贴合低代码用户心理，且与 v2.1 评估推荐完全一致，避免了捕获语法带来的复杂度。</li>
+    <li><strong>符号冻结实战通过</strong>——六大子系统零新增括号对，全部用关键字 + 内置函数 + 编译目标实现，冻结声明不是空话。</li>
+    <li><strong>数据函数中文命名直觉良好</strong>——取第、长度、加入、包含，中文用户零学习成本；序号从 1 开始符合非程序员直觉。</li>
+  </ul>
+</div>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 1：插槽机制的表达力缺口</div>
+  <p><code>渲染 内容</code> 只支持<strong>单个插槽</strong>。真实组件（如卡片：标题栏插槽 + 正文插槽 + 底部按钮插槽）需要多插槽。此外标准库 <code>列表</code> 的 <code>{项}/{序号}</code> 是组件私有的隐式变量，与用户作用域的关系未说明。建议 v2.3（或实现期间）定案：<code>渲染 内容.头部 / 内容.正文</code> 具名插槽方案，以及列表模板变量的作用域声明。</p>
+</div>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 2：大括号双语义的工程风险</div>
+  <p>「文字内 <code>{名字}</code> 是插值、值位置 <code>{ "键":值 }</code> 是字典」依赖位置区分语义。规范写清了规则，但这是<strong>全语言唯一一处「同一符号两种含义」</strong>，报错信息必须格外精准（用户在文字块里写了 <code>{ "a":1 }</code> 会得到什么错？）。建议 ese check 对此设专项诊断：文字块内出现冒号即提示「插值只支持变量名」。另注意 <code>[~ 遍历 用户 为 项 ~]</code> 中 <code>{项.键}</code> 是「插值内点语法」，与纯变量插值的文法不同，需在 EBNF 中把 interpolation 的产生式扩为 <code>{ member-access }</code>。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 3：测试体系表达力偏薄</div>
+  <p>当前只有顶层 <code>断言</code> 与执行块断言，缺少：用例分组/组织（哪个测试属于哪个模块）、失败即停 vs 继续的用例级控制、异步/交互测试（点击按钮后界面变了吗）。v0.2 解释器阶段够用，v1.0 发布前建议补充「测试块」概念——同样不需要新括号，用 <code>[&gt; 测试 组名: … &gt;]</code> 复用执行块即可。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 4：导航栏示例的嵌套字面量可读性临界</div>
+  <p><code>项目=[["首页","home"],["关于","about"]]</code> 已经到了「一行看不懂」的边缘——这恰恰是 ese 要消灭的东西。标准库第一批组件的属性接口应避免嵌套字面量，建议 <code>导航栏</code> 改为插槽写法（<code>[&lt; 导航栏 &gt; [(- 首页 -) 跳转 home] &gt;]</code> 风格），或在 ese-ui 里为它设计专用的声明式子语法。这条是<strong>标准库 API 品味问题</strong>，实现前定即可。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 5：SSR 水合细节留白</div>
+  <p>「交互部分水合后由客户端接管」方向正确，但未说明：水合的粒度（整页还是逐组件）、服务端与客户端状态不一致时以谁为准、<code>ese serve</code> 的运行时语言（编译器本体用什么写）。这些不阻塞规范，但 v0.1 解释器选型时必须一并决定。</p>
+</div>
+
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">低</span>问题 6：旧账两笔</div>
+  <p>运算符左结合仍未明文声明；<code>打印</code> 等基础内置函数仍未收录正式清单；异步预留声明依旧缺失。均为文档性工作，建议在 v2.3 一张附录里一并清掉。</p>
+</div>
+
+<h2>五、改进建议（v2.2 → v2.3）</h2>
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">P0</span>实现前必须定案（随解释器 v0.1 一起）</div>
+  <ol>
+    <li>插槽机制：具名插槽 + 列表模板变量作用域（问题 1）；</li>
+    <li>大括号双语义的诊断规则与 interpolation 文法修正（问题 2）；</li>
+    <li>导航栏等标准库 API 去嵌套字面量化（问题 4）。</li>
+  </ol>
+</div>
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">P1</span>随 v0.2 一起</div>
+  <p>测试块组织（问题 3）；SSR 水合粒度与运行时选型（问题 5）。</p>
+</div>
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">P2</span>一张 v2.3 附录清旧账</div>
+  <p>运算符结合性声明、完整内置函数表、异步预留声明（问题 6）。纯文档，半天以内。</p>
+</div>
+
+<h2>六、结论与路线确认</h2>
+<div class="card">
+  <p>v2.2 是信息量最大的一版规范：语言层（数据、错误处理）、平台层（路由、状态、组件库、测试、SSR）一次到位，且<strong>没有为任何子系统破坏符号冻结</strong>。三次评估的轨迹清晰：v2.0 修审美 → v2.1 修语法 → v2.2 修语义。</p>
+  <p><strong>评估阶段正式结束。</strong>剩余问题全部属于「实现期间自然要回答的细节」，不存在需要先回规范再开工的结构性障碍。按既定路线执行：</p>
+  <table>
+    <tr><th>下一步</th><th>内容</th></tr>
+    <tr><td>① VSCode 插件</td><td>TextMate 高亮（17 对括号配对）+ snippets（缓解中文标点切换）</td></tr>
+    <tr><td>② ese check</td><td>括号配对、未定义变量、预留符号、大括号专项诊断、缺属性警告</td></tr>
+    <tr><td>③ 解释器 v0.1</td><td>前端层 → HTML（静态部分），期间定案插槽/字面量细节</td></tr>
+    <tr><td>④ 解释器 v0.2</td><td>逻辑层 + 状态响应式 + 组件 + ese test</td></tr>
+  </table>
+</div>
+
+<footer>
+  ese 语言 v2.2 评估报告 · 生成于 2026-09-30 · 依据《ese语言规范-v2.2.md》，对比基准《ese语言评估报告-v2.1.html》
+</footer>
+
+</div>
+</body>
+</html>

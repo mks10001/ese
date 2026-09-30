@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ese 语言 v2.1 设计评估报告</title>
+<style>
+  :root{
+    --ink:#1a1d23; --sub:#5a6270; --line:#e4e7ec; --bg:#f7f8fa; --card:#ffffff;
+    --accent:#4f5be8; --good:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --good-bg:#ecfdf5; --warn-bg:#fffbeb; --bad-bg:#fef2f2; --accent-bg:#eef0fe;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.75;}
+  .wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--ink);padding-bottom:20px;margin-bottom:32px;}
+  header h1{font-size:28px;letter-spacing:1px;}
+  header .meta{color:var(--sub);font-size:13px;margin-top:8px;}
+  h2{font-size:20px;margin:40px 0 16px;padding-left:12px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:20px 0 8px;}
+  p{margin:8px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin:14px 0;}
+  .verdict{background:linear-gradient(135deg,#eef0fe,#fdfdff);border:1px solid #d6daff;}
+  .verdict strong{color:var(--accent);}
+  .score-row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .score-label{width:150px;font-size:14px;flex-shrink:0;}
+  .score-label small{color:var(--sub);font-weight:400;}
+  .score-bar{flex:1;height:14px;background:#edf0f4;border-radius:7px;overflow:hidden;position:relative;}
+  .score-fill{height:100%;border-radius:7px;}
+  .score-ghost{position:absolute;top:0;height:100%;background:repeating-linear-gradient(45deg,rgba(0,0,0,.06),rgba(0,0,0,.06) 4px,transparent 4px,transparent 8px);}
+  .score-num{width:110px;text-align:right;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums;flex-shrink:0;}
+  .tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 10px;border-radius:20px;margin-right:6px;vertical-align:middle;}
+  .t-good{background:var(--good-bg);color:var(--good);}
+  .t-warn{background:var(--warn-bg);color:var(--warn);}
+  .t-bad{background:var(--bad-bg);color:var(--bad);}
+  .t-info{background:var(--accent-bg);color:var(--accent);}
+  code{font-family:Consolas,"Courier New",monospace;background:#f0f2f5;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:13.5px;color:#c7254e;}
+  pre{background:#272b33;color:#e8eaf0;border-radius:8px;padding:16px 18px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:10px 0;font-family:Consolas,monospace;}
+  pre code{background:none;border:none;color:inherit;padding:0;}
+  ul,ol{padding-left:22px;margin:8px 0;}
+  li{margin:6px 0;}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;background:var(--card);}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#f0f2f6;font-weight:600;}
+  .p0{border-left:4px solid var(--bad);}
+  .p1{border-left:4px solid var(--warn);}
+  .p2{border-left:4px solid var(--accent);}
+  .issue-head{font-weight:600;margin-bottom:4px;}
+  footer{margin-top:60px;color:var(--sub);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ese 语言 v2.1 设计评估报告</h1>
+  <div class="meta">评估对象：《ese语言规范-v2.1.md》 · 评估日期：2026-09-30 · 性质：v2.0 评估后的复查报告</div>
+</header>
+
+<h2>一、总体结论</h2>
+<div class="card verdict">
+  <p><strong>一句话结论：</strong>v2.1 是一次<strong>高完成度的修复</strong>——v2.0 的三个严重问题全部解决或基本解决，评分卡总分从 <strong>34/70 提升到 48/70</strong>。语言已从「艺术原型」进入「可以开工实现」的状态。剩余问题集中在<strong>数据结构、词法歧义、运行时错误处理</strong>三处，均不阻塞解释器 v0.1 的开发，但需要在 v0.1 开发过程中顺手定案。</p>
+  <p>建议：按既定路线直接开工 VSCode 插件与 ese check；本报告第三节的 3 个新问题在实现期间解决，不必再等一版规范。</p>
+</div>
+
+<h2>二、v2.0 问题修复核查</h2>
+<div class="card">
+<table>
+  <tr><th>v2.0 问题</th><th>等级</th><th>v2.1 处理方式</th><th>状态</th></tr>
+  <tr><td>按钮与逻辑无绑定机制</td><td><span class="tag t-bad">严重</span></td><td>命名触发器：<code>[&gt; 名字: … &gt;]</code> 定义逻辑块，<code>[&gt; 文字 &lt;] 调用 名字</code> 绑定</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>[!!] 与右括号双轨终止</td><td><span class="tag t-bad">严重</span></td><td>换行即结束，<code>[!!]</code> 降级为可选行内分隔符；文法中 <code>statement = container</code></td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>作用域/函数/复用缺失</td><td><span class="tag t-bad">严重</span></td><td>块级词法作用域 + 组件独立作用域 + <code>[&lt; &gt;]</code> 调用 + <code>引入</code> 模块语法</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>符号过多、含义关联弱</td><td><span class="tag t-warn">中等</span></td><td>符号表冻结为 17 对；<code>[w m]</code> 并入容器属性</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>后端语义只是示意图</td><td><span class="tag t-warn">中等</span></td><td>降级预留区：不在文法中、解析器遇之报错</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>无形式化文法</td><td><span class="tag t-warn">中等</span></td><td>第五节 EBNF 全文法，含歧义消除说明</td><td><span class="tag t-good">已解决</span></td></tr>
+  <tr><td>无错误处理与格式规范</td><td><span class="tag t-warn">中等</span></td><td>路线图中安排 ese check / ese fmt；运行时错误仍未定义</td><td><span class="tag t-warn">部分解决</span></td></tr>
+  <tr><td>中文输入法输入成本</td><td><span class="tag t-warn">中等</span></td><td>计划靠 VSCode snippets 缓解（未实现）</td><td><span class="tag t-warn">部分解决</span></td></tr>
+</table>
+</div>
+
+<h2>三、评分卡（对比 v2.0）</h2>
+<div class="card">
+  <div class="score-row"><div class="score-label">易上手性 <small>8→8</small></div><div class="score-bar"><div class="score-fill" style="width:80%;background:var(--good);"></div><div class="score-ghost" style="left:80%;width:0;"></div></div><div class="score-num">8 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">视觉一致性 <small>9→9</small></div><div class="score-bar"><div class="score-fill" style="width:90%;background:var(--good);"></div></div><div class="score-num">9 / 10 持平</div></div>
+  <div class="score-row"><div class="score-label">语法简洁度 <small>5→7</small></div><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--good);"></div><div class="score-ghost" style="left:50%;width:20%;"></div></div><div class="score-num">7 / 10 ↑2</div></div>
+  <div class="score-row"><div class="score-label">表达能力 <small>3→5</small></div><div class="score-bar"><div class="score-fill" style="width:50%;background:var(--warn);"></div><div class="score-ghost" style="left:30%;width:20%;"></div></div><div class="score-num">5 / 10 ↑2</div></div>
+  <div class="score-row"><div class="score-label">扩展性 <small>4→7</small></div><div class="score-bar"><div class="score-fill" style="width:70%;background:var(--good);"></div><div class="score-ghost" style="left:40%;width:30%;"></div></div><div class="score-num">7 / 10 ↑3</div></div>
+  <div class="score-row"><div class="score-label">输入效率 <small>4→5</small></div><div class="score-bar"><div class="score-fill" style="width:50%;background:var(--warn);"></div><div class="score-ghost" style="left:40%;width:10%;"></div></div><div class="score-num">5 / 10 ↑1</div></div>
+  <div class="score-row"><div class="score-label">工具链生态 <small>1→2</small></div><div class="score-bar"><div class="score-fill" style="width:20%;background:var(--bad);"></div><div class="score-ghost" style="left:10%;width:10%;"></div></div><div class="score-num">2 / 10 ↑1</div></div>
+  <p style="color:var(--sub);font-size:13px;margin-top:14px;">斜纹为 v2.0 分数。涨幅最大的是扩展性（符号冻结 + 属性化扩展路线）与语法简洁度（[!!] 移除）。输入效率与工具链仍是短板，前者靠插件、后者靠按路线执行。</p>
+</div>
+
+<h2>四、v2.1 新引入的优点</h2>
+<div class="card">
+  <ul>
+    <li><span class="tag t-good">加分</span><strong>组件独立作用域设计克制而正确。</strong>「组件不捕获外部变量、属性是唯一通道」避免了 JS 闭包陷阱式的隐式依赖，也让组件天然可单测——这个决定比多数新手语言设计者做得好。</li>
+    <li><span class="tag t-good">加分</span><strong>预留区的文法级强制。</strong>预留符号不在 EBNF 中，解析器遇到必须报错。「预留」从文档承诺变成了机器强制，杜绝了「半成品语义被误用」。</li>
+    <li><span class="tag t-good">加分</span><strong>符号冻结 + 属性扩展</strong>给了语言清晰的成长边界：符号集恒定，能力无限。这是从「玩具」走向「可维护」的分水岭。</li>
+    <li><span class="tag t-good">加分</span><strong>文法要点说明</strong>（第五节末尾）把五条设计决策写成了实现者可执行的判据，解释器开发时的争议会大幅减少。</li>
+  </ul>
+</div>
+
+<h2>五、遗留与新发现问题</h2>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 1：数据结构缺位——没有列表/字典，循环只能数次数</div>
+  <p><code>[~ 3次 … ~]</code> 只能重复固定次数；而「取出用户列表并逐个显示」这种最基本的场景无法表达：<code>[# 用户列表 = [] #]</code> 里的 <code>[]</code> 是什么类型？如何取第 i 项？如何遍历？建议 v2.2 定义：</p>
+  <pre><code>[# 名单 = ["张三", "李四"] #]
+[~ 遍历 名单 为 项
+  [- {项} -]
+~]</code></pre>
+  <p>数据结构（列表、字典）+ 遍历循环是解释器 v0.2 之前必须补齐的语义，否则组件再多也拼不出动态页面。</p>
+</div>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 2：三处词法歧义未闭合</div>
+  <p>文法虽已建立，但以下写法无法唯一解析：</p>
+  <ul>
+    <li><strong>媒体块含星号</strong>：<code>[* a * b.png *]</code> —— <code>* </code> 既是定界符又可能出现在文件名里。建议规定文件名不得含 <code>*</code>，或改用 <code>[* a*b.png *]</code> 的最长匹配规则并写进文法。</li>
+    <li><strong>路径双斜杠</strong>：<code>[/ /home /]</code> —— 定界符 <code>[/</code> 与路径开头的 <code>/</code> 相连成 <code>//</code>。建议路径不写开头斜杠：<code>[/ home /]</code>。</li>
+    <li><strong>插值范围未定</strong>：<code>{名字}</code> 在文法里是 <code>value</code> 的一种，但示例中它出现在 <code>text-body</code> 里。需明确：插值仅允许出现在文字块与字符串内，其他位置视为普通字符。</li>
+  </ul>
+</div>
+
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">高</span>问题 3：运行时错误处理未定义</div>
+  <p>静态错误 ese check 能接住，但运行时问题没有着落：组件调用缺属性怎么办？输入框拿到非预期内容怎么办？<code>[$ a = b / c $]</code> 除以零怎么办？建议三选一并写入 v2.2：<strong>① 失败即停</strong>（报错含行号，适合教学语境）；<strong>② 默认值兜底</strong>（缺属性为空串，适合低代码场景）；<strong>③ 显式捕获块</strong>（新增语法，成本最高）。以 ese 的定位，推荐 ②+① 组合：属性缺省兜底、计算错误即停。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 4：运算符优先级未定义</div>
+  <p>文法中 <code>calc-expr = value { arith-op value }</code> 意味着严格左结合：<code>1 + 2 * 3 = 9</code> 而非 7。这可以是有意的设计（简单可预期），但必须<strong>明文写出</strong>并在 ese check 中对混用加减乘除的表达式给提示，否则「算错了」会成为第一批用户的第一批 bug。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 5：内置函数清单未正式化</div>
+  <p>v1.0 草案里的 <code>打印</code> 在 v2.1 的文法中消失了（既非容器也非语句）。需要一份正式的内置函数表：<code>打印</code>、<code>跳转</code>、<code>长度</code>、<code>转数字</code>……每个给出签名与行为。没有这份清单，解释器无法定义运行时。</p>
+</div>
+
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">中</span>问题 6：组件属性无默认值与校验</div>
+  <p><code>[&lt; 欢迎卡 等级=3 &gt;</code> 少传 <code>名字</code> 时目前只能靠运行时报错。建议 <code>属性 名字 = "游客"</code> 支持默认值语法，一行解决，也让组件更接近成熟 UI 库的 props 体验。</p>
+</div>
+
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">低</span>问题 7：异步模型留白</div>
+  <p>计时器、动画、网络等待未来必然需要异步语义。v2.1 无需实现，但建议在规范里预留一句「异步能力将在 v3.x 以 [~ 等 X秒 ~] 或事件回调形式引入」，防止未来语法破坏现在的括号体系。</p>
+</div>
+
+<h2>六、改进建议（v2.1 → v2.2）</h2>
+<div class="card p0">
+  <div class="issue-head"><span class="tag t-bad">P0</span>在解释器 v0.1 开发期间同步定案三件事</div>
+  <ol>
+    <li>数据结构 + 遍历循环（问题 1）；</li>
+    <li>三处词法歧义的裁决并回写文法（问题 2）；</li>
+    <li>运行时错误策略 ②+① 组合（问题 3）。</li>
+  </ol>
+  <p>这三项都是「写解释器时反正要回答的问题」，边实现边定，定完回写规范——不要再单独等一版 v2.2 文档，避免规范与实现脱节。</p>
+</div>
+<div class="card p1">
+  <div class="issue-head"><span class="tag t-warn">P1</span>补两份附录</div>
+  <p>① 内置函数表（问题 5）；② 运算符结合性声明 + ese check 提示规则（问题 4）。均为纯文档工作，各半天以内。</p>
+</div>
+<div class="card p2">
+  <div class="issue-head"><span class="tag t-info">P2</span>组件属性默认值、异步预留声明、Playground</div>
+  <p>随 v0.2 解释器一起做即可。</p>
+</div>
+
+<h2>七、结论</h2>
+<div class="card">
+  <p>v2.1 把 ese 从「一份漂亮的想法」变成了「一份可以照着写解释器的合同」。设计层面没有再发现结构性缺陷，剩下的都是实现过程中自然会暴露、也自然会解决的细节。<strong>不需要再评估了——开工做工具链，让代码来验收设计。</strong></p>
+</div>
+
+<footer>
+  ese 语言 v2.1 评估报告 · 生成于 2026-09-30 · 依据《ese语言规范-v2.1.md》，对比基准《ese语言评估报告.html》（v2.0）
+</footer>
+
+</div>
+</body>
+</html>
