@@ -1,9 +1,9 @@
-# ese 语言完整规范（v2.9）
+# ese 语言完整规范（v2.11）
 
 > **ese** —— 一门用对称括号书写的极简全栈语言。
 > 一套符号同时描述页面、数据与逻辑，写完就是网站。
 >
-> **本文档为 v1.0 → v2.9 全部规则的完整合并版**，是 ese 语言的唯一权威规范。
+> **本文档为 v1.0 → v2.11 全部规则的完整合并版**，是 ese 语言的唯一权威规范。
 > 增量修订记录见《ese语言规范-v2.9.md》等历史文档；版本沿革见本文第二十二节。
 
 ---
@@ -814,11 +814,14 @@ newline-gap  = (* 空行，忽略 *) ;
                 它只能出现在 program 顶层（文法要点 4），此前列入 item 属列举冗余。 *)
 
 (* ===== 容器类 ===== *)
+(* 块闭合符通则（勘误 E-2）：闭合符 = 开头符号 + "]"。
+   本节此前把多字符闭合符简写为裸 "]"（exec / branch / loop / route-page /
+   component-def），与 §3.1 的符号表、§10 与 §12 的示例不一致，现补全。 *)
 container    = panel | text | media | input | button | action-button
              | route-page | route | branch | loop | data | calc
              | component-def | component-call | exec | children-render ;
 
-panel        = "[" , "+" , attr* , LF , { item , LF } , "]" ;
+panel        = "[" , "+" , attr* , LF , { item , LF } , "+]" ;
 text         = "[" , "-" , text-body , "-" , "]" ;
 media        = "[" , "*" , filename , attr* , "*" , "]" ;
              (* filename 禁含 "*" 与空白（v2.9）；带空白时用引号形式；
@@ -837,13 +840,16 @@ route        = "[" , "/" , path , "/" ] ;
 jump         = ("跳转" | "goto") , path ;
 
 exec         = "[" , ">" , [ ("异步" | "async") ] ,
-               [ exec-name , [ params ] , ":" ] , LF , { item , LF } , "]" ;
+               [ exec-name , [ params ] , ":" ] , LF , { item , LF } , ">]" ;
                (* v2.9：命名逻辑块可声明形参；无名执行块到达即执行 *)
 params       = "(" , identifier , { "," , identifier } , ")" ;
 exec-name    = identifier | "全局" | "global" ;   (* 勘误 E-1 补入，v2.10：invoke 与 exec 均引用 *)
 
-branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "]" ;
-else-part    = "[" , "??" , LF , { item , LF } , "?]" ;
+branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "?]" ;
+else-part    = "[" , "??" , LF , { item , LF } , "??]" ;
+             (* 勘误 E-3（v2.11）：旧版写作 "?]"。按闭合符通则应为 "??]"，
+                与 §3.1 符号表 `[?? ??]` 及 §10/§12/§14 的示例一致。
+                解析器为兼容旧源码仍接受 "?]" 形。 *)
 condition    = or-expr ;
 or-expr      = and-expr , { ("或者" | "or") , and-expr } ;
 and-expr     = cmp-expr , { ("并且" | "and") , cmp-expr } ;
@@ -854,7 +860,7 @@ term         = unary , { ("*" | "/") , unary } ;
 unary        = [ ("非" | "not") | "-" ] , primary ;
 primary      = value | func-call | "(" , or-expr , ")" ;
 
-loop         = "[" , "~" , ( count | iterate ) , LF , { item , LF } , "]" ;
+loop         = "[" , "~" , ( count | iterate ) , LF , { item , LF } , "~]" ;
 count        = ( number , ("次" | "times") ) | ( identifier , ("次" | "times") ) ;
 iterate      = ("遍历" | "for") , identifier , ("为" | "as") , identifier , [ key-attr ] ;
 key-attr     = ("键" | "key") , "=" , value ;        (* v2.9：重渲染身份 *)
@@ -864,20 +870,20 @@ calc         = "[" , "$" , [ ("派生" | "derived") ] , identifier , "=" , or-ex
              (* v2.9：带 派生 修饰者为只读派生值 *)
 
 (* ===== 路由页面 ===== *)
-route-page   = "[" , "/" , ("页面" | "page") , path , LF , { item , LF } , "]" ;
+route-page   = "[" , "/" , ("页面" | "page") , path , LF , { item , LF } , "/]" ;
 path         = path-segment , { "/" , path-segment } ;
 path-segment = identifier | "{" , identifier , "}" ;
 
 (* ===== 组件 ===== *)
 component-def  = "[" , "+" , ("组件" | "component") , identifier , LF ,
-                 { attr-line | item , LF } , "]" ;
+                 { attr-line | item , LF } , "+]" ;
 attr-line      = ("属性" | "prop") , prop-def , { "," , prop-def } ;
 prop-def       = identifier , [ type-name ] , [ "=" , value ] , [ ("必须" | "required") ] ;
                (* v2.9：类型标注 + 必须；两者均可省，省略即 v2.2 的宽容属性 *)
 type-name      = "文字" | "数字" | "是否" | "名单" | "字典" | "任意"
                | "text" | "number" | "bool" | "list" | "dict" | "any" ;
-component-call = "[" , "<" , qual-name , prop-pass* , ">" , "]" ;
-               | "[" , "<" , qual-name , prop-pass* , LF , { item , LF } , ">" , "]" ;
+component-call = "[" , "<" , qual-name , prop-pass* , ">]" ;
+               | "[" , "<" , qual-name , prop-pass* , LF , { item , LF } , ">]" ;
 qual-name      = identifier , { "." , identifier } ;   (* v2.9：命名空间引用 *)
 prop-pass      = identifier , "=" , ( string | number | identifier ) ;
 children-render= ("渲染" | "render") , ("内容" | "children") ;
@@ -935,7 +941,9 @@ SP           = (* 至少一个空白字符（半角空格或制表符）。普�
 11. **命名空间引用 `qual-name` 只出现在引用位置**（`component-call` 与模块成员引用），值位置的点仍是 `member-access`，两者不重叠（v2.9）。
 12. **`doc-comment` 优先于 `comment` 匹配**：以 `文档:` / `doc:` 开头的注释按文档注释处理，其余为普通注释（v2.9）。
 13. **不可达产生式的清除**（勘误 E-1，v2.10）：`item` 必须覆盖所有可作顶层语句的产生式。v2.9 遗漏了 `import`、`assert`、`children-render`，使 `引入`、`断言`、`渲染 内容` 三条已定义的语法从 `program` 不可达——这是文法自身的缺陷，与语义无关。本版补齐并把 `pragma` 移出 `item`（它只能出现在 `program` 顶层，见第 4 条）。
-14. **单一数据源优先**：`spec/grammar.ebnf` 与本节互为镜像；两者不一致时以 `spec/` 为准并修正本节（见 `spec/README.md`）。一致性与不可达性由 `ese spec verify` 校验。
+14. **块闭合符通则**（勘误 E-2，v2.11）：闭合符 = 开头符号 + `]`，即 `+]` `?]` `??]` `~]` `>]` `/]` `#]` `$]` `*]` `=]`。§18 旧版把 `panel` / `exec` / `branch` / `loop` / `route-page` / `component-def` / `component-call` 的闭合符简写成裸 `"]"`，与 §3.1 符号表及 §10、§12 的示例不符；本版按通则补全。
+15. **否则分支闭合符是 `??]`**（勘误 E-3，v2.11）：旧版写作 `"?]"`，漏了一个 `?`。判据是第 14 条的通则，以及 §3.1 符号表把它列为 `[?? ??]`、§10 / §12 / §14 的示例一律写作 `??]`。解析器为兼容既有源码仍接受 `?]` 形，但规范形只有 `??]`。
+16. **单一数据源优先**：`spec/grammar.ebnf` 与本节互为镜像；两者不一致时以 `spec/` 为准并修正本节（见 `spec/README.md`）。一致性与不可达性由 `ese spec verify` 校验。
 
 ---
 
@@ -1103,7 +1111,8 @@ ese 的长期风险不是语法，而是**规则漂移**：v2.5 → v2.8 四版�
 | v2.8 | **按钮定界符的空白升格为语法成份**：写作 `[c. 文字 .c]`，`c.` 之后与 `.c` 之前各须一个空格；**v2.7 的残留同形 `[c.a.c]` 被消灭**（紧贴形态只能是列表/点语法），按钮与列表之间不再存在任何同形构造，位置裁决降级为诊断提示；配套新增**点语法必须紧贴**规则（`用户 . 名字` 非法，见 6.2）；EBNF 引入 `SP` 终结符并写入 `button`、`member-access` 产生式；ese check 增两条诊断（见 7.5） |
 | **v2.9** | **契约层**：属性类型标注与 `必须`（11.1）、安全取值 `取` / `取或`（6.2、7.3）、错误边界 `容错` / `兜底`（8.4）。**表达力**：遍历键 `键=`（6.3）、派生值 `派生`（13.4）、事件传参与事件对象 `事件`（10 节）、样式逃生舱 `样式` / `类`（9 节，12 项白名单）、可访问性 `替代` / `标签` / `提示`（9 节，含媒体块文件名收紧——**破坏性**）。**工程治理**：诊断规范与 `ESE` 错误码 + `diagnostics.json`（8.3）；`ese.json` 清单与模块命名空间（2 节、11.3）；文档注释与 `ese doc`（11.5）；`ese fmt --migrate` 迁移工具（19 节）；治理与冻结流程（21 节）。符号表仍 17 对 |
 | **v2.10（勘误）** | **文法勘误 E-1**：`item` 补入 `import` / `assert` / `children-render`（v2.9 漏列导致三者从 `program` 不可达），`pragma` 移出 `item`；补入未定义的 `exec-name`；`input` 补 `attr*`（v2.9 已引入 `标签` / `提示` 却未反映在产生式）。**不含语义变更**，符号表仍 17 对。勘误来源：`spec/grammar.ebnf` 编写时发现（见 §19） |
+| **v2.11（勘误 · 转译器落地）** | **文法勘误 E-2**：块闭合符通则显式化——`panel` / `exec` / `branch` / `loop` / `route-page` / `component-def` / `component-call` 的闭合符由裸 `"]"` 补全为 `+]` `>]` `?]` `~]` `/]`。**文法勘误 E-3**：否则分支闭合符由 `"?]"` 修正为 `"??]"`（与 §3.1 符号表 `[?? ??]` 及全部示例一致），解析器仍兼容 `?]` 形。**不含语义变更**，符号表仍 17 对。同版落地《ese转译器设计.md》：源码 → 词法 → 语法 → IR → 三个目标（前端静态站点 / 后端 SSR 服务 / 二进制 wasm） |
 
 ---
 
-*完整规范 v2.10 定稿（含 v2.0 → v2.10 全部修订）。语言层、语法层与契约层的公开问题已关闭；按钮与列表之间不存在同形构造，错误边界与诊断体系已定义，文法已消除不可达产生式。工具链已开工：`spec/` 三个单一数据源与 `ese fmt`（含 `--migrate`）已实现并自测通过（CLI v0.1.0），下一步为 `ese check` → 解释器 v0.1。*
+*完整规范 v2.11 定稿（含 v2.0 → v2.11 全部修订）。语言层、语法层与契约层的公开问题已关闭；按钮与列表之间不存在同形构造，错误边界与诊断体系已定义，文法已消除不可达产生式，块闭合符已按通则显式化。工具链已开工：`spec/` 三个单一数据源、`ese fmt`（含 `--migrate`）与 `ese build`（三目标转译器）已实现并自测通过（CLI v0.2.0），下一步为 `ese check` → 解释器 v0.1。*

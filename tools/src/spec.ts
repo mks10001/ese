@@ -41,6 +41,14 @@ export interface BuiltinAttribute {
   note?: string;
 }
 
+export interface UiComponentRecord {
+  id: string;
+  zh: string;
+  en: string;
+  since: string;
+  note?: string;
+}
+
 export interface KeywordsFile {
   $schema?: string;
   meta: Record<string, unknown>;
@@ -49,6 +57,8 @@ export interface KeywordsFile {
   builtinAttributes: BuiltinAttribute[];
   styleWhitelist: string[];
   eventFields: string[];
+  /** ese-ui 标准库第一批（内置组件名，中英两形）。 */
+  uiComponents?: UiComponentRecord[];
 }
 
 export interface DiagnosticTemplate {

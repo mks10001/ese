@@ -3,29 +3,31 @@
 > 一门用对称括号书写的极简全栈语言 —— 一套符号同时描述页面、数据与逻辑，写完就是网站。
 
 ![spec](https://img.shields.io/badge/spec-v2.10-2563eb)
-![cli](https://img.shields.io/badge/cli-v0.1.0-16a34a)
-![lang](https://img.shields.io/badge/语言-尚不可运行-b45309)
+![cli](https://img.shields.io/badge/cli-v0.2.0-16a34a)
+![lang](https://img.shields.io/badge/语言-可运行%20v0.2-16a34a)
 ![symbols](https://img.shields.io/badge/符号表-17%20对-16a34a)
 
 **仓库**：<https://github.com/mks10001/ese> ｜ **规范**：[完整版](docs/ese语言规范-完整版.md) ｜ **提案**：[RFC 流程](rfcs/README.md) ｜ **单一数据源**：[spec/](spec/README.md) ｜ **工具链**：[tools/](tools/README.md)
 
-**当前状态：规范完成，工具链开工，语言本身还不能运行。**
+**当前状态：规范完成，工具链与三目标转译器可用，语言可以运行了。**
 
 | 项目 | 版本 | 说明 |
 |------|------|------|
 | 规范（spec） | **v2.10** | 完整、符号表冻结 17 对，见 [`docs/ese语言规范-完整版.md`](docs/ese语言规范-完整版.md) |
 | 单一数据源 | **已就绪** | [`spec/`](spec/README.md)：`grammar.ebnf` / `keywords.json`（50 条）/ `diagnostics.json`（50 码） |
-| 工具链（CLI） | **v0.1.0** | `ese fmt --migrate`、`ese spec verify` 可用，46 项自测通过 |
-| 语言可执行性 | — | **仍不可运行**。没有解释器，本文档中的示例都还不能执行，`ese check` 也尚未发布 |
+| 工具链（CLI） | **v0.2.0** | `ese fmt --migrate`、`ese spec verify`、`ese build`（三目标转译器），149 项自测通过 |
+| 语言可执行性 | **v0.2（转译器）** | `ese build` 可产出能点、能跳转的静态站点 / Node SSR 服务 / 逻辑层 `.wasm`。`ese check` 独立静态检查尚未发布 |
 
-> 我们宁可把状态写难看，也不愿意让任何人在 README 里看到示例就以为它能跑。什么时候这里写着「语言可执行性：v0.1」，它就真的能跑。
+> 我们宁可把状态写难看，也不愿意让任何人在 README 里看到示例就以为它能跑。现在这一栏写着 v0.2，是因为它**真的**能跑——每个示例都有端到端自测锁着。
 
 工具链现在可以装了就能跑，**不需要任何依赖、不需要构建**（Node ≥ 22.18 直接加载 TypeScript）：
 
 ```bash
-node tools/src/cli.ts spec verify                # 校验三个单一数据源
-node tools/src/cli.ts fmt --migrate .            # dry-run：打印差异，不动文件
-node tools/src/cli.ts fmt --migrate --write .    # 确认后落盘
+node tools/src/cli.ts spec verify                     # 校验三个单一数据源
+node tools/src/cli.ts fmt --migrate .                 # dry-run：打印差异，不动文件
+node tools/src/cli.ts fmt --migrate --write .         # 确认后落盘
+node tools/src/cli.ts build --target=all examples/计数站 --out=dist   # 三目标转译
+node dist/server/server.mjs                           # 启动 SSR 服务
 ```
 
 它**不是**解释器——`ese fmt` 只做缩进与历史语法迁移，`ese spec verify` 只校验元数据。区别很重要。
@@ -136,11 +138,11 @@ ese 是一个**面向中文用户的网页构建语言**。它的目标不是取
 | 规范 | v2.10 完整规范 + 增量文档 | ✅ 已完成 |
 | ① | `spec/` 三个单一数据源（`grammar.ebnf` / `keywords.json` / `diagnostics.json`） | ✅ 已完成（50 关键字 / 50 诊断码） |
 | ② | `ese fmt --migrate` —— 自动迁移历史按钮写法 | ✅ 已完成（六条迁移规则，46 项自测通过） |
-| ③ | `ese check` 静态检查（读文法建解析器，消费全部诊断码） | ⏳ **下一步** |
+| ③ | `ese check` 静态检查（读文法建解析器，消费全部诊断码） | ⏳ **下一步**（解析器已随转译器落地，待独立为 lint 命令） |
 | ④ | VSCode 插件（TextMate 高亮 + 中英 snippets 补全） | ⏳ 计划中 |
-| ⑤ | 解释器 v0.1（前端层 → HTML） | ⏳ 计划中 |
-| ⑥ | 解释器 v0.2（逻辑 / 状态 / 组件 / 插槽 / 测试） | ⏳ 计划中 |
-| ⑦ | `ese build` / `ese serve`（静态生成与服务端渲染） | ⏳ 计划中 |
+| ⑤ | 解释器 v0.1（前端层 → HTML） | ✅ 已被转译器 web 目标覆盖（预渲染 + 水合） |
+| ⑥ | 解释器 v0.2（逻辑 / 状态 / 组件 / 插槽 / 测试） | ◐ 部分：状态 / 组件 / 插槽 / 派生值 / 事件已随转译器落地；测试层未实现 |
+| ⑦ | `ese build` / `ese serve`（静态生成与服务端渲染） | ◐ 基本完成：`ese build --target=web/server/wasm` 三目标可用；独立 `ese serve` 命令未拆分（`node dist/server/server.mjs` 即服务） |
 | ⑧ | v3.0 后端层 `[b d] [u n] [q p] [@ @]` + 异步解冻 | 🔒 预留（当前使用即报错） |
 
 **验收门槛**：v3.0 之前不谈「语言完成」。第一个里程碑的定义是——`ese build` 能生成一个**能点、能跳转、能保存数据**的页面。
@@ -205,11 +207,16 @@ ese doc            # ⏳ 生成组件 API 文档
 ├── examples/                  # 示例项目（中文 / 英文各一套，模式不混用）
 │   ├── 计数站/                 # [zz] 组件状态、派生值、事件、路由、遍历键
 │   └── counter/               # [ee] 同一份语义的英文对照
-└── tools/                     # ✅ CLI v0.1.0（零依赖、零构建）
+└── tools/                     # ✅ CLI v0.2.0（零依赖、零构建）
     ├── README.md              # 用法、迁移规则、设计约束
     ├── bin/ese.mjs
-    ├── src/                   # cli / spec / diagnostics / scan / rules / commands
-    └── test/run.ts            # 46 项自测
+    ├── src/                   # 词法/解析/IR/三目标发射器 + fmt/spec 命令
+    │   ├── lex.ts parse.ts ir.ts          转译前端：token → AST → IR
+    │   ├── emit-js.ts emit-web.ts        运行时与静态站点目标
+    │   ├── emit-server.ts               Node SSR 目标
+    │   ├── emit-wasm.ts                 WebAssembly 二进制目标
+    │   └── cli.ts build.ts commands.ts  命令入口
+    └── test/                  # 149 项自测（run.ts：五层；build.ts：转译器端到端）
 ```
 
 `docs/` 下的每一份增量规范都**保留不删**。版本记录里被推翻的决定（含按钮定界符的四次改型）是这门语言最有效的教材。
@@ -236,7 +243,7 @@ ese doc            # ⏳ 生成组件 API 文档
 
 - **规范版本**（`2.x`）与**实现版本**（CLI 独立版本号）解耦。
 - 每个 Release 同时标注三项：**规范版本 / 实现版本 / 语言可执行性**。
-- Tag 规则：规范用 `spec-v2.10`，实现用 `cli-v0.1.0`。
+- Tag 规则：规范用 `spec-v2.10`，实现用 `cli-v0.2.0`。
 - 语义变更流程：RFC 采纳 → 次版本发**弃用警告** → 下一个次版本破坏。详见规范第二十一节。
 
 ---

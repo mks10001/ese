@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { loadSpec } from './spec.ts';
 import { Reporter } from './diagnostics.ts';
 import { cmdFmt, cmdSpec } from './commands.ts';
+import { cmdBuild } from './build.ts';
 import type { CmdContext } from './commands.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -28,10 +29,22 @@ function readVersion(): string {
 const HELP = `ese —— ese 语言工具链
 
 用法：
-  ese fmt [路径…] [选项]     统一缩进为每层两空格（幂等）
-  ese spec verify            校验 spec/ 三个单一数据源的一致性
-  ese help                   显示本帮助
-  ese --version              显示版本
+  ese build [目录] [选项]      把 ese 转译成前端 / 后端 / 二进制
+  ese fmt [路径…] [选项]       统一缩进为每层两空格（幂等）
+  ese spec verify              校验 spec/ 三个单一数据源的一致性
+  ese help                     显示本帮助
+  ese --version                显示版本
+
+build 选项：
+  --target=web|server|wasm|all   转译目标（默认 web）
+                                   web    静态站点：每页预渲染 HTML + app.js
+                                   server 可运行服务：node dist/server.mjs（SSR）
+                                   wasm   逻辑层二进制：dist/logic.wasm
+                                   all    三个目标全出（分子目录 web/ server/ wasm/）
+  --out=<目录>                   产物目录（默认 dist）
+
+    管线：源码 → 词法 → 语法 → IR → 目标发射。
+    三个目标共用同一 IR，新增后端不必触碰词法、语法与降级。
 
 fmt 选项：
   --migrate        应用历史破坏性变更的自动迁移（默认关闭）
@@ -43,11 +56,11 @@ fmt 选项：
   --quiet, -q      只输出汇总
 
 退出码：
-  0  成功，且无需改写
-  1  需要改写 / 存在需人工确认项 / 单一数据源校验失败
+  0  成功
+  1  转译失败 / 需要改写 / 单一数据源校验失败
   2  用法错误
 
-注意：默认 dry-run 是刻意的。在 ese check 可用之前，改写不做二次校验，
+注意：ese fmt 默认 dry-run 是刻意的。在 ese check 可用之前，改写不做二次校验，
 静默落盘的风险高于多敲一个 --write。ese check 发布后将把默认值改为 --write。
 `;
 
@@ -82,6 +95,8 @@ function main(argv: string[]): number {
   const cmd = args[0];
   const rest = args.slice(1);
   switch (cmd) {
+    case 'build':
+      return cmdBuild(rest, ctx);
     case 'fmt':
       return cmdFmt(rest, ctx);
     case 'spec':

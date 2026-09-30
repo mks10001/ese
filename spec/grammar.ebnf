@@ -1,13 +1,21 @@
 (* =====================================================================
    ese 语言形式化文法 —— 机器可读单一数据源
-   spec_version : 2.9
+   spec_version : 2.11
    authority    : docs/ese语言规范-完整版.md §18 形式化文法（EBNF）
-   consumers    : ese check 解析器、ese fmt、VSCode 插件、解释器
+   consumers    : ese check 解析器、ese fmt、ese build、VSCode 插件、解释器
    ---------------------------------------------------------------------
-   与规范文档的三处规范化修正（勘误 E-1，2026-09-30）：
-     规范 §18 的 item 产生式未覆盖 import / assert / children-render
-     三个已在别处定义的产生式，导致它们从 program 不可达。
-     本文件将其补入 item，并同步回写规范。
+   与规范文档的规范化修正（勘误）：
+     勘误 E-1（2026-09-30，v2.10）：规范 §18 的 item 产生式未覆盖
+       import / assert / children-render 三个已在别处定义的产生式，
+       导致它们从 program 不可达。本文件将其补入 item，并同步回写规范。
+     勘误 E-2（v2.11）：块闭合符通则显式化——闭合符 = 开头符号 + "]"。
+       本文件旧版把 panel / exec / branch / loop / route-page /
+       component-def / component-call 的闭合符简写为裸 "]"，
+       与 §3.1 符号表及 §10 / §12 的示例不符，现补全为
+       "+]" ">]" "?]" "~]" "/]" "??]" 等形式。
+     勘误 E-3（v2.11）：否则分支闭合符由 "?]" 修正为 "??]"。
+       判据：闭合符通则 + §3.1 符号表 `[?? ??]` + 全部示例一律写作 ??]。
+       解析器为兼容既有源码仍接受 "?]" 形，但规范形只有 "??]"。
    ---------------------------------------------------------------------
    @symbols（正式符号 17 对，冻结；CI 校验此块行数恒为 17）
      [+ +]   panel            浮雕框       前端
@@ -49,11 +57,15 @@ item         = container | comment | doc-comment | import | assert
 newline-gap  = (* 空行，忽略 *) ;
 
 (* ===== 容器类（语句即容器：闭合即结束，对应「换行即结束」） ===== *)
+(* 块闭合符通则（勘误 E-2）：闭合符 = 开头符号 + "]"。
+   即 "+]" "?]" "??]" "~]" ">]" "/]" "#]" "$]" "*]" "=]"。
+   本节此前把多字符闭合符简写为裸 "]"（如 exec / branch / loop / route-page /
+   component-def），与 §3.1 的符号表、§10 与 §12 的示例不一致，现按通则补全。 *)
 container    = panel | text | media | input | button | action-button
              | route-page | route | branch | loop | data | calc
              | component-def | component-call | exec | children-render ;
 
-panel        = "[" , "+" , attr* , LF , { item , LF } , "]" ;
+panel        = "[" , "+" , attr* , LF , { item , LF } , "+]" ;
 text         = "[" , "-" , text-body , "-" , "]" ;
 media        = "[" , "*" , filename , attr* , "*" , "]" ;
              (* filename 禁含 "*" 与空白（v2.9）；带空白时用引号形式；
@@ -72,13 +84,16 @@ route        = "[" , "/" , path , "/" ] ;
 jump         = ("跳转" | "goto") , path ;
 
 exec         = "[" , ">" , [ ("异步" | "async") ] ,
-               [ exec-name , [ params ] , ":" ] , LF , { item , LF } , "]" ;
+               [ exec-name , [ params ] , ":" ] , LF , { item , LF } , ">]" ;
                (* v2.9：命名逻辑块可声明形参；无名执行块到达即执行；
                   "异步" 修饰为预留语法，当前报 ESE1011 *)
 params       = "(" , identifier , { "," , identifier } , ")" ;
 
-branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "]" ;
-else-part    = "[" , "??" , LF , { item , LF } , "?]" ;
+branch       = "[" , "?" , condition , LF , { item , LF } , else-part? , "?]" ;
+else-part    = "[" , "??" , LF , { item , LF } , "??]" ;
+             (* 勘误 E-3：旧版写作 "?]"——按闭合符通则应为 "??]"，
+                与 §3.1 符号表 `[?? ??]`、§10/§12/§14 的示例一致。
+                解析器为兼容旧源码仍接受 "?]" 形。 *)
 condition    = or-expr ;
 or-expr      = and-expr , { ("或者" | "or") , and-expr } ;
 and-expr     = cmp-expr , { ("并且" | "and") , cmp-expr } ;
@@ -89,7 +104,7 @@ term         = unary , { ("*" | "/") , unary } ;
 unary        = [ ("非" | "not") | "-" ] , primary ;
 primary      = value | func-call | "(" , or-expr , ")" ;
 
-loop         = "[" , "~" , ( count | iterate ) , LF , { item , LF } , "]" ;
+loop         = "[" , "~" , ( count | iterate ) , LF , { item , LF } , "~]" ;
 count        = ( number , ("次" | "times") ) | ( identifier , ("次" | "times") ) ;
 iterate      = ("遍历" | "for") , identifier , ("为" | "as") , identifier , [ key-attr ] ;
 key-attr     = ("键" | "key") , "=" , value ;        (* v2.9：重渲染身份 *)
@@ -99,20 +114,20 @@ calc         = "[" , "$" , [ ("派生" | "derived") ] , identifier , "=" , or-ex
              (* v2.9：带 派生 修饰者为只读派生值 *)
 
 (* ===== 路由页面 ===== *)
-route-page   = "[" , "/" , ("页面" | "page") , path , LF , { item , LF } , "]" ;
+route-page   = "[" , "/" , ("页面" | "page") , path , LF , { item , LF } , "/]" ;
 path         = path-segment , { "/" , path-segment } ;
 path-segment = identifier | "{" , identifier , "}" ;
 
 (* ===== 组件 ===== *)
 component-def  = "[" , "+" , ("组件" | "component") , identifier , LF ,
-                 { attr-line | item , LF } , "]" ;
+                 { attr-line | item , LF } , "+]" ;
 attr-line      = ("属性" | "prop") , prop-def , { "," , prop-def } ;
 prop-def       = identifier , [ type-name ] , [ "=" , value ] , [ ("必须" | "required") ] ;
                (* v2.9：类型标注 + 必须；两者均可省，省略即 v2.2 的宽容属性 *)
 type-name      = "文字" | "数字" | "是否" | "名单" | "字典" | "任意"
                | "text" | "number" | "bool" | "list" | "dict" | "any" ;
-component-call = "[" , "<" , qual-name , prop-pass* , ">" , "]" ;
-               | "[" , "<" , qual-name , prop-pass* , LF , { item , LF } , ">" , "]" ;
+component-call = "[" , "<" , qual-name , prop-pass* , ">]" ;
+               | "[" , "<" , qual-name , prop-pass* , LF , { item , LF } , ">]" ;
 qual-name      = identifier , { "." , identifier } ;   (* v2.9：命名空间引用 *)
 prop-pass      = identifier , "=" , ( string | number | identifier ) ;
 children-render= ("渲染" | "render") , ("内容" | "children") ;

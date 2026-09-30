@@ -30,7 +30,8 @@
       "{path}": "路径或模块路径",
       "{count}": "数量",
       "{count2}": "第二个数量（同一条消息中出现两个计数时使用）",
-      "{codes}": "错误码列表（用逗号分隔）"
+      "{codes}": "错误码列表（用逗号分隔）",
+      "{target}": "转译目标名（web / server / wasm）"
     }
   },
   "diagnostics": [
@@ -202,6 +203,19 @@
       "trigger": "跳转参数带前导斜杠，或 [/ 路径] 形式缺少 页面 关键字",
       "hint_zh": "运行 ese fmt --migrate --write 可自动改写（改写后请用 ese check 复核）",
       "hint_en": "Run ese fmt --migrate --write to rewrite automatically, then re-check with ese check"
+    },
+    {
+      "code": "ESE1016",
+      "severity": "error",
+      "topic": "无法解析的语句",
+      "since": "2.11",
+      "spec_ref": "§4.1、§18",
+      "zh": "无法解析的语句：{detail}",
+      "en": "Unparsable statement: {detail}",
+      "placeholders": ["detail"],
+      "trigger": "语句位置出现无法归入任何产生式的 token 序列",
+      "hint_zh": "括号符号共 17 对，可执行 ese --symbols 查看；此行若为手写说明文字，请改用 [- … -] 文字块",
+      "hint_en": "There are 17 symbol pairs; run ese --symbols to list them. If this line is prose, wrap it in [- … -]"
     },
     {
       "code": "ESE2001",
@@ -592,6 +606,19 @@
       "en": "Migrated {count} site(s) automatically; {count2} need manual review: {detail}",
       "placeholders": ["count", "count2", "detail"],
       "trigger": "迁移结果可用但存在歧义或风格损失"
+    },
+    {
+      "code": "ESE4007",
+      "severity": "error",
+      "topic": "转译目标不支持该构造",
+      "since": "2.11",
+      "spec_ref": "§15、§19",
+      "zh": "{target} 目标不支持该构造：{detail}",
+      "en": "The {target} target does not support this construct: {detail}",
+      "placeholders": ["target", "detail"],
+      "trigger": "在转译目标的能力边界之外使用了语言构造（如二进制目标中的界面构造）",
+      "hint_zh": "把该构造移出目标范围，或改用支持它的目标（web / server）",
+      "hint_en": "Move this construct out of the target's scope, or emit to a target that supports it (web / server)"
     }
   ],
   "textFormats": {

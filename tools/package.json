@@ -1,8 +1,8 @@
 {
   "name": "ese",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "ese 语言命令行工具链 —— 规范 v2.9 / CLI v0.1.0。包含 ese fmt（含 --migrate 历史改写迁移）与 ese spec verify（单一数据源校验）。",
+  "description": "ese 语言命令行工具链 —— 规范 v2.10 / CLI v0.2.0。包含 ese fmt（含 --migrate 历史改写迁移）、ese spec verify（单一数据源校验）与 ese build（三目标转译器：web / server / wasm）。",
   "type": "module",
   "license": "Apache-2.0",
   "bin": {

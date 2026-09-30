@@ -1,9 +1,10 @@
 /**
  * test/run.ts —— 自测
  *
- * 覆盖四层：① 迁移规则逐条；② 缩进格式化；③ 单一数据源校验；④ 命令层端到端。
- * 端到端直接调用与 CLI 完全相同的命令函数（cmdFmt / cmdSpecVerify），因此不依赖
- * 能否派生子进程；只有在宿主允许时才额外跑一次真实 CLI 子进程做冒烟。
+ * 覆盖五层：① 迁移规则逐条；② 缩进格式化；③ 单一数据源校验；
+ * ④ 命令层端到端；⑤ 转译器端到端（前端 / 后端 / 二进制三个目标，见 test/build.ts）。
+ * 端到端直接调用与 CLI 完全相同的命令函数（cmdFmt / cmdSpecVerify / cmdBuild），
+ * 因此不依赖能否派生子进程；只有在宿主允许时才额外跑一次真实 CLI 子进程做冒烟。
  * 零测试框架依赖，失败即以退出码 1 结束。
  */
 
@@ -18,6 +19,7 @@ import { migrateLine, formatLines } from '../src/rules.ts';
 import { Reporter } from '../src/diagnostics.ts';
 import { cmdFmt, cmdSpecVerify } from '../src/commands.ts';
 import type { CmdContext } from '../src/commands.ts';
+import { runBuildTests } from './build.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const toolsDir = resolve(here, '..');
@@ -217,6 +219,11 @@ try {
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }
+
+// ------------------------------------------------------------- ⑤ 转译器
+
+console.log('⑤ 转译器端到端（前端 / 后端 / 二进制）');
+await runBuildTests(eq, repoRoot);
 
 // ------------------------------------------------------------------ 汇总
 

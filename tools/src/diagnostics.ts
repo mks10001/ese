@@ -27,6 +27,25 @@ export interface Position {
   column: number;
 }
 
+/**
+ * 结构化错误：只携带「诊断码 + 参数 + 位置」，不含任何自然语言文本。
+ * 文本一律由 Reporter 从 spec/diagnostics.json 取模板渲染——
+ * 这是「报错语言跟随文件模式」得以成立的前提。
+ */
+export class EseError extends Error {
+  readonly code: string;
+  readonly params: Record<string, string | number>;
+  readonly pos: Position;
+
+  constructor(code: string, params: Record<string, string | number>, pos: Position) {
+    super(`${code}@${pos.line}:${pos.column}`);
+    this.name = 'EseError';
+    this.code = code;
+    this.params = params;
+    this.pos = pos;
+  }
+}
+
 function fill(template: string, params: Record<string, string | number>): string {
   return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (_all, name: string) => {
     const v = params[name];
