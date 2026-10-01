@@ -454,7 +454,8 @@ class Parser {
   private parseText(): TextN {
     const tok = this.peek(0);
     this.i += 1;
-    return { k: 'text', parts: this.template(tok.text, tok.pos), pos: tok.pos };
+    // 定界符内侧的空白属于排版而非内容（与按钮 SP 规则同理），裁剪首尾
+    return { k: 'text', parts: this.template(tok.text.trim(), tok.pos), pos: tok.pos };
   }
 
   private parseButton(): ButtonN {

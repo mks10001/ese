@@ -439,8 +439,14 @@ export class JsEmitter {
       const raw = chunk.slice(idx + 1).trim();
       const css = STYLE_CSS[key];
       if (!css || !raw) continue;
-      const isNum = /^\d+(\.\d+)?$/.test(raw);
-      out.push(`${css}: ${PX_KEYS.has(key) && isNum ? `${raw}px` : raw}`);
+      // 数值型属性：整体或逐个 token 补 px（如 "外距: 10 0" → "margin: 10px 0"）
+      const value = PX_KEYS.has(key)
+        ? raw
+            .split(/\s+/)
+            .map((t) => (/^\d+(\.\d+)?$/.test(t) ? `${t}px` : t))
+            .join(' ')
+        : raw;
+      out.push(`${css}: ${value}`);
     }
     return out;
   }
