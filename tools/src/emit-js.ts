@@ -59,6 +59,8 @@ interface Ctx {
   scope: string;
   out: string;
   depth: number;
+  /** 处理器体内 [# #]/[$ $] 声明的局部变量名（emitLogic 据此发 let）。 */
+  localDecls?: Set<string>;
 }
 
 function esc(s: string): string {
@@ -169,7 +171,9 @@ export class JsEmitter {
     if (c.comp && c.comp.states.some((s) => s.name === head)) return `${c.container}[${jsStr(head)}]${tail}`;
     if (c.page && c.page.states.some((s) => s.name === head)) return `${c.container}[${jsStr(head)}]${tail}`;
     if (this.program.globals.some((g) => g.name === head)) return `__G[${jsStr(head)}]${tail}`;
-    return `${head}${tail}`;
+    // 未在任何符号表中的名字：按状态取值处理（读取得到 undefined），
+    // 而不是发射裸标识符 —— 后者必然 ReferenceError，且编译期无法察觉。
+    return `${c.container}[${jsStr(head)}]${tail}`;
   }
 
   // -------------------------------------------------- 语句
@@ -550,12 +554,30 @@ export class JsEmitter {
   }
 
   private handlerFn(fnSuffix: string, owner: 'comp' | 'page', params: string[], body: Stmt[], comp: ComponentIr | null, page: PageIr | null): void {
+    // 处理器体内的 [# 名 = 初值 #]（data）是局部变量声明（非状态）：
+    // 顶部统一 let，体内 data/calc 均按普通赋值发射。[$ $]（calc）本身
+    // 只是赋值语句，不是声明 —— 目标是否存在由 localDecls / 状态表裁决。
+    const localDecls = new Set<string>();
+    const collect = (list: Stmt[]): void => {
+      for (const s of list) {
+        if (s.k === 'data') localDecls.add(s.name);
+        else if (s.k === 'branch') {
+          collect(s.then);
+          if (s.otherwise) collect(s.otherwise);
+        } else if (s.k === 'loop') collect(s.body);
+        else if (s.k === 'exec' && s.name === null) collect(s.body);
+      }
+    };
+    collect(body);
+
     this.lines.push(`function __h_${owner}_${sanitize(fnSuffix)}(__scope, __ev, __args) {`);
+    for (const n of localDecls) this.lines.push(`  let ${n};`);
     const ctx: Ctx = {
       kind: owner === 'comp' ? 'component' : 'page',
       comp: owner === 'comp' ? comp : null,
       page: owner === 'page' ? page : null,
-      locals: [...params],
+      locals: [...params, ...localDecls],
+      localDecls,
       container: owner === 'comp' ? '__ese.inst(__scope)' : `__ese.page(__scope)`,
       scope: '__scope',
       out: '__o',
@@ -574,7 +596,12 @@ export class JsEmitter {
     switch (s.k) {
       case 'calc':
       case 'data':
-        this.lines.push(`${p}${this.assignTarget(s.name, c)} = ${this.expr(s.value, c)};`);
+        if (c.localDecls && c.localDecls.has(s.name)) {
+          // 处理器局部变量（顶部已 let 声明）
+          this.lines.push(`${p}${s.name} = ${this.expr(s.value, c)};`);
+        } else {
+          this.lines.push(`${p}${this.assignTarget(s.name, c)} = ${this.expr(s.value, c)};`);
+        }
         break;
       case 'exec':
         if (s.name === null) for (const x of s.body) this.emitLogic(x, c);
@@ -847,7 +874,9 @@ function __invoke(scope, name, args) {
   const ownerKey = kind === 'page' ? __ROUTE : String(scope).replace(/:[0-9]+$/, '');
   const h = __ese.findHandler(ownerKey, kind, name);
   if (!h) throw new Error('ESE3006 未定义的逻辑块: ' + name);
-  h(scope, null, args || []);
+  // 页面处理器以路由键为状态容器（__ese.page(路由)），故传入 ownerKey；
+  // 组件处理器以实例键为容器，原样传入。
+  h(kind === 'page' ? ownerKey : scope, null, args || []);
   __rerender();
 }
 

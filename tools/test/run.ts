@@ -20,6 +20,7 @@ import { Reporter } from '../src/diagnostics.ts';
 import { cmdFmt, cmdSpecVerify } from '../src/commands.ts';
 import type { CmdContext } from '../src/commands.ts';
 import { runBuildTests } from './build.ts';
+import { runInteractTests } from './interact.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const toolsDir = resolve(here, '..');
@@ -224,6 +225,9 @@ try {
 
 console.log('⑤ 转译器端到端（前端 / 后端 / 二进制）');
 await runBuildTests(eq, repoRoot);
+
+console.log('⑥ 客户端交互链路（输入绑定 / 处理器调用 / 重渲染）');
+await runInteractTests(eq, repoRoot);
 
 // ------------------------------------------------------------------ 汇总
 
